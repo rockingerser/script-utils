@@ -1,6 +1,7 @@
 local module = {}
 
 print("Thanks for requiring me!")
+print(coroutine.yield)
 
 function module.Test1()
     print("Hello from module!")
