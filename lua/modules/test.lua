@@ -15,4 +15,8 @@ function module.GetPI()
     return 3.1415
 end
 
+function module.YieldMyself()
+    print("Yield result"..coroutine.yield())
+end
+
 return module
