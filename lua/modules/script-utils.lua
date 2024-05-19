@@ -1,12 +1,15 @@
-local module = {}
+local ScriptUtils = {}
 local RunService = game:GetService("RunService")
+ScriptUtils.__index = ScriptUtils
 
-function module.findFirstChild(a, instanceName)
+function ScriptUtils.new()
+
+function ScriptUtils.findFirstChild(a, instanceName)
     return a:FindFirstChild(instanceName)
 end
 
-function module.waitForChild(a, instanceName, timeout)
+function ScriptUtils.waitForChild(a, instanceName, timeout)
     return nil
 end
 
-return module
+return ScriptUtils

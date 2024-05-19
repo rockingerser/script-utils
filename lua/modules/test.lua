@@ -16,7 +16,7 @@ function module.GetPI()
 end
 
 function module.YieldMyself()
-    print("Yield result"..coroutine.yield())
+    print("Yield result")
 end
 
 return module
