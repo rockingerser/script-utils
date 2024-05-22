@@ -12,7 +12,7 @@ return {
         {
             type = "getter",
             name = "echo",
-            priority = math.huge,
+            level = 0,
             callback = function(...)
                 return unpack(...)
             end
