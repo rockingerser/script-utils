@@ -1,11 +1,12 @@
 local CommandVM = {
-    code = {
+    opcode = {
         GLOBAL_SET = 0x00,
         LOCAL_SET = 0x01,
         GLOBAL_GET = 0x02,
         LOCAL_GET = 0x03,
         CONST = 0x04,
-        CALL = 0x05
+        COMMAND_CALL = 0x05,
+        GETTER_CALL = 0x06
     },
     valueType = {
         null = 0x00,
@@ -22,12 +23,6 @@ function CommandVM.new()
     self.Commands = {}
     self.__finished = Instance.new("BindableEvent")
     self.Finished = self.__finished.Event
-    --[[
-    self.CmdPrefix = ";"
-    self.GetterPrefix = "."
-    self.LocalVarPrefix = "@"
-    self.GlobalVarPrefix = "$"
-    ]]
     self.Script = {}
 
     return self
@@ -43,19 +38,21 @@ function CommandVM.type(value)
         CommandVM.valueType.null
 end
 
+--[[
 function CommandVM.globalVar(var)
     return {
-        type = CommandVM.code.GLOBAL_GET,
+        type = CommandVM.opcode.GLOBAL_GET,
         value = var
     }
 end
 
 function CommandVM.localVar(var)
     return {
-        type = CommandVM.code.LOCAL_GET,
+        type = CommandVM.opcode.LOCAL_GET,
         value = var
     }
 end
+]]
 
 function CommandVM.value(value)
     return value
@@ -76,9 +73,13 @@ function Commands:CreateCommand(options)
         error("callback required")
     end
 
-    options.level = 30
-    options.maxInstances = options.maxInstances or math.huge
-    options.priority = options.priority or math.huge
+    local env = getfenv(options.callback)
+
+    function env.
+    function env.global_get(var)
+        return self:RuntimeGlobalGet(var)
+    end
+
     self.Commands[options.name] = options
 end
 
@@ -91,27 +92,29 @@ function CommandVM:Open()
     end
 end
 
-function CommandVM:GlobalSet(var, value)
-    table.insert(self.Script, {
+--[[
+function CommandVM.global_set(var, value)
+    return {
         type = CommandVM.code.GLOBAL_SET,
         name = var,
         value = CommandVM.data(value)
-    })
+    }
 end
 
-function CommandVM:LocalSet(var, value)
-    table.insert(self.Script, {
+function CommandVM.local_set(var, value)
+    return {
         type = CommandVM.code.LOCAL_SET,
         name = var,
         value = CommandVM.data(value)
-    })
+    }
 end
+]]
 
 function CommandVM:GetValue(value)
     return if value.type == CommandVM.valueType.special then
-        if value.value.type == CommandVM.code.GLOBAL_GET then
+        if value.value.type == CommandVM.opcode.GLOBAL_GET then
             return self.GlobalVars[value.value.value]
-        elseif value.value.type == CommandVM.code.LOCAL_GET then
+        elseif value.value.type == CommandVM.opcode.LOCAL_GET then
             return self.LocalVars[value.value.value]
         else
             error("Unknown error")
@@ -120,17 +123,17 @@ function CommandVM:GetValue(value)
         value.value
 end
 
-function CommandVM:CommandCall(name, ...)
+function CommandVM.call(name, ...)
     local params = {}
-    for _, param in ipairs(...) do
+    for _, param in ipairs({...}) do
         table.insert(params, CommandVM.data(param))
     end
 
-    table.insert(self.Script, {
-        type = CommandVM.code.CALL,
+    return {
+        type = CommandVM.opcode.CALL,
         name,
         value = params
-    })
+    }
 end
 
 function CommandVM:Close()
@@ -145,14 +148,22 @@ function CommandVM:RuntimeLocalSet(var, value)
     self.LocalVars[var] = value
 end
 
-function CommandVM:Start()
+function CommandVM:RuntimeGlobalGet(var)
+    return self:GetValue(self.GlobalVars[var])
+end
+
+function CommandVM:RuntimeLocalGet(var)
+    return self:GetValue(self.LocalVars[var])
+end
+
+function CommandVM:Run()
     for _, Code in ipairs(self.Script) do
         if Code.code == CommandVM.code.GLOBAL_SET then
-            self.GlobalVars[Code.name] = self:GetValue(Code.value)
+            self:RuntimeGlobalSet(Code.value)
         elseif Code.code == CommandVM.code.LOCAL_SET then
-            self.LocalVars[Code.name] = self:GetValue(Code.value)
+            self:RuntimeLocalSet(Code.value)
         elseif Code.code == CommandVM.code.CALL then
-
+            local Command = self.Commands[Code.name]
         end
     end
 end
