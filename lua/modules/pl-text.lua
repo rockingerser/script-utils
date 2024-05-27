@@ -35,5 +35,5 @@ game.ReplicatedStorage.ReplicateEvent.OnClientEvent:Connect(function(Table)
     end
 end)
 
---loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"))()]]
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"))()
 
