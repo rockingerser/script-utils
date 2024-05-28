@@ -5,7 +5,21 @@ local ShootEvent = ReplicatedStorage.ShootEvent
 local ReplicateEvent = ReplicatedStorage.ReplicateEvent
 local Reload = ReplicatedStorage.ReloadEvent
 
+-- Neon Text module
+-- only lower case characters and numbers
+-- Sorry! No documentation
+-- (Not fully developed but still works anyway)
+
 local Glyphs = {
+    [""] = {
+        width = 0.44333333333333336,
+        vertex = {
+            { Vector2.new(.06, .9), Vector2.new(.06, .25) },
+            { Vector2.new(.06, .9), Vector2.new(.39, .9) },
+            { Vector2.new(.39, .9), Vector2.new(.39, .25) },
+            { Vector2.new(.39, .25), Vector2.new(.06, .25) },
+        }
+    },
     ["0"] = {
         width = 0.5633333333333334,
         vertex = {
@@ -128,6 +142,13 @@ local Glyphs = {
             { Vector2.new(.18, .63), Vector2.new(.47, .63) },
         }
     },
+    ["I"] = {
+        width = 0.2733333333333333,
+        vertex = {
+            { Vector2.new(.13, .23), Vector2.new(.13, .9) }
+        }
+    },
+    
     ["a"] = {
         width = 0.5433333333333333,
         vertex = {
@@ -343,20 +364,18 @@ local Glyphs = {
             { Vector2.new(.52, .9), Vector2.new(.66, .43) }
         }
     },
-
-    --Whoops!
-    ["y"] = {
-        width = 0.47333333333333333,
-        vertex = {
-            { Vector2.new(.07, .43), Vector2.new(.24, .9) },
-            { Vector2.new(.4, .43), Vector2.new(.138, 1.2) }
-        }
-    },
     ["x"] = {
         width = 0.49666666666666665,
         vertex = {
             { Vector2.new(.07, .43), Vector2.new(.43, .9) },
             { Vector2.new(.4, .43), Vector2.new(.07, .9) }
+        }
+    },
+    ["y"] = {
+        width = 0.47333333333333333,
+        vertex = {
+            { Vector2.new(.07, .43), Vector2.new(.24, .9) },
+            { Vector2.new(.4, .43), Vector2.new(.138, 1.2) }
         }
     },
     ["z"] = {
@@ -367,14 +386,6 @@ local Glyphs = {
             { Vector2.new(.07, .9), Vector2.new(.43, .9) }
         }
     },
-    
-    ["I"] = {
-        width = 0.2733333333333333,
-        vertex = {
-            { Vector2.new(.13, .23), Vector2.new(.13, .9) }
-        }
-    },
-    
 }
 
 local GlyphGenCframes = {}
@@ -437,17 +448,17 @@ function NeonText:Render()
     end
     self.RenderedBullets = {}
     local BulletId = 1
+    self.TextRenderScaleWidth = 0
     for i = 1, #self.Text do
         if self.Text:sub(i, i) == " " then
             self.TextRenderScaleWidth += 1 / 3
             continue
         end
-        local Glyph = GlyphGenCframes[self.Text:sub(i, i)]
+        local Glyph = GlyphGenCframes[self.Text:sub(i, i):lower()]
         if Glyph == nil then
             continue
         end
         for Key, Line in ipairs(Glyph.vertex) do
-            print(Line.Position)
             self.RenderedBullets[BulletId] = {
                 RayObject = Ray.new(Vector3.zero, Vector3.zero),
                 Distance = Line.Distance * self.TextSize,
@@ -480,7 +491,6 @@ function NeonText:Draw()
     end
 
     local Gun = getGun()
-    print(Gun)
     if Gun then
         ShootEvent:FireServer(self.RenderedBullets, Gun)
         Reload:FireServer(Gun)
@@ -488,11 +498,11 @@ function NeonText:Draw()
 end
 
 --------------------------- test
-
+--[[
 local neonText = NeonText.new()
-neonText.Text = "soy la primera persona en crear este script ohh sii"
+neonText.Text = "soy la primera persona en crear este script oh yeahh"
 neonText.CFrame = Player.Character.Head.CFrame * CFrame.new(0, 0, 0)
-neonText.TextSize = 1
+neonText.TextSize = 1.5
 neonText:Render()
 
 while task.wait(.36) do
@@ -501,3 +511,6 @@ while task.wait(.36) do
         neonText:Draw()
     end
 end
+]]
+
+return NeonText
