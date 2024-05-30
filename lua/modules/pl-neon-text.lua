@@ -6,12 +6,12 @@ local ReplicateEvent = ReplicatedStorage.ReplicateEvent
 local Reload = ReplicatedStorage.ReloadEvent
 
 -- Neon Text module
--- only lower case characters and numbers
+-- only lower alphabetical characters, numbers and some symbols
 -- Sorry! No documentation
--- (Not fully developed but still works anyway)
+-- (Not fully developed but still works anyway) B <line x1=".12" y1=".24" x2=".12" y2=".9">
 
 local Glyphs = {
-    [""] = {
+    ["\00"] = {
         width = .44333333333333336,
         vertex = {
             { Vector2.new(.06, .9), Vector2.new(.06, .24) },
@@ -76,6 +76,12 @@ local Glyphs = {
             { Vector2.new(.36, .9), Vector2.new(.55, .6) }
         }
     },
+    ["'"] = {
+        width = .17333333333333334,
+        vertex = {
+            { Vector2.new(.09, .2), Vector2.new(.09, .39) }
+        }
+    },
     ["("] = {
         width = .3433333333333333,
         vertex = {
@@ -85,12 +91,6 @@ local Glyphs = {
             { Vector2.new(.15, .92), Vector2.new(.3, 1.12) }
         }
     },
-    ["'"] = {
-        width = .17333333333333334,
-        vertex = {
-            { Vector2.new(.09, .2), Vector2.new(.09, .39) }
-        }
-    },
     [")"] = {
         width = .3466666666666667,
         vertex = {
@@ -98,6 +98,46 @@ local Glyphs = {
             { Vector2.new(.2, .36), Vector2.new(.26, .63) },
             { Vector2.new(.26, .63), Vector2.new(.2, .92) },
             { Vector2.new(.2, .92), Vector2.new(.05, 1.12) }
+        }
+    },
+    ["*"] = {
+        width = .43,
+        vertex = {
+            { Vector2.new(.21, .24), Vector2.new(.21, .6) },
+            { Vector2.new(.07, .32), Vector2.new(.35, .52) },
+            { Vector2.new(.35, .32), Vector2.new(.07, .52) }
+        }
+    },
+    ["+"] = {
+
+        width = .5666666666666667,
+        vertex = {
+            { Vector2.new(.28, .36), Vector2.new(.28, .82) },
+            { Vector2.new(.07, .58), Vector2.new(.5, .58) }
+        }
+    },
+    [","] = {
+        width = .21,
+        vertex = {
+            { Vector2.new(.03, 1.05), Vector2.new(.12, .86) }
+        }
+    },
+    ["-"] = {
+        width = .27666666666666667,
+        vertex = {
+            { Vector2.new(.03, .62), Vector2.new(.24, .62) }
+        }
+    },
+    ["."] = {
+        width = .2633333333333333,
+        vertex = {
+            { Vector2.new(.12, .84), Vector2.new(.12, .9) }
+        }
+    },
+    ["/"] = {
+        width = .41333333333333333,
+        vertex = {
+            { Vector2.new(.06, .96), Vector2.new(.33, .24) }
         }
     },
     ["0"] = {
@@ -214,6 +254,65 @@ local Glyphs = {
             { Vector2.new(.44, .42), Vector2.new(.41, .6) }
         }
     },
+    [":"] = {
+        width = .24333333333333335,
+        vertex = {
+            { Vector2.new(.12, .84), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .41), Vector2.new(.12, .47) }
+        }
+    },
+    [";"] = {
+        width = .21,
+        vertex = {
+            { Vector2.new(.03, 1.05), Vector2.new(.12, .86) },
+            { Vector2.new(.12, .41), Vector2.new(.12, .47) }
+        }
+    },
+    ["<"] = {
+        width = .51,
+        vertex = {
+            { Vector2.new(.42, .44), Vector2.new(.06, .61) },
+            { Vector2.new(.06, .61), Vector2.new(.42, .77) }
+        }
+    },
+    ["="] = {
+        width = .55,
+        vertex = {
+            { Vector2.new(.1, .48), Vector2.new(.46, .48) },
+            { Vector2.new(.46, .69), Vector2.new(.1, .69) }
+        }
+    },
+    [">"] = {
+        width = .51,
+        vertex = {
+            { Vector2.new(.1, .44), Vector2.new(.46, .61) },
+            { Vector2.new(.46, .61), Vector2.new(.1, .77) }
+        }
+    },
+    ["?"] = {
+        width = .47333333333333333,
+        vertex = {
+            { Vector2.new(.22, .84), Vector2.new(.22, .9) },
+            { Vector2.new(.22, .69), Vector2.new(.4, .4) },
+            { Vector2.new(.4, .4), Vector2.new(.24, .24) },
+            { Vector2.new(.24, .24), Vector2.new(.09, .4) }
+        }
+    },
+    ["@"] = {
+        width = .8966666666666666,
+        vertex = {
+            { Vector2.new(.39, .9), Vector2.new(.58, .72) },
+            { Vector2.new(.3, .69), Vector2.new(.6, .51) },
+            { Vector2.new(.3, .69), Vector2.new(.39, .9) },
+            { Vector2.new(.57, .9), Vector2.new(.6, .51) },
+            { Vector2.new(.57, .9), Vector2.new(.81, .72) },
+            { Vector2.new(.81, .72), Vector2.new(.6, .27) },
+            { Vector2.new(.6, .27), Vector2.new(.15, .42) },
+            { Vector2.new(.15, .42), Vector2.new(.1, .8) },
+            { Vector2.new(.1, .8), Vector2.new(.3, 1.1) },
+            { Vector2.new(.3, 1.1), Vector2.new(.66, 1) }
+        }
+    },
     ["A"] = {
         width = .6533333333333333,
         vertex = {
@@ -222,10 +321,165 @@ local Glyphs = {
             { Vector2.new(.18, .63), Vector2.new(.47, .63) },
         }
     },
+    ["B"] = {
+        width = .6233333333333333,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.39, .24) },
+            { Vector2.new(.39, .24), Vector2.new(.51, .39) },
+            { Vector2.new(.51, .39), Vector2.new(.39, .54) },
+            { Vector2.new(.12, .54), Vector2.new(.39, .54) },
+            { Vector2.new(.39, .54), Vector2.new(.51, .7) },
+            { Vector2.new(.51, .7), Vector2.new(.39, .9) },
+            { Vector2.new(.12, .9), Vector2.new(.39, .9) },
+        }
+    },
+    ["C"] = {
+        width = .65,
+        vertex = {
+            { Vector2.new(.34, .24), Vector2.new(.12, .42) },
+            { Vector2.new(.34, .24), Vector2.new(.58, .39) },
+            { Vector2.new(.12, .42), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.58, .77) },
+        }
+    },
+    ["D"] = {
+        width = .6233333333333333,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.39, .24) },
+            { Vector2.new(.39, .24), Vector2.new(.51, .39) },
+            { Vector2.new(.51, .39), Vector2.new(.51, .75) },
+            { Vector2.new(.51, .75), Vector2.new(.39, .9) },
+            { Vector2.new(.12, .9), Vector2.new(.39, .9) },
+        }
+    },
+    ["E"] = {
+        width = .57,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.51, .24) },
+            { Vector2.new(.12, .54), Vector2.new(.48, .54) },
+            { Vector2.new(.12, .9), Vector2.new(.51, .9) },
+        }
+    },
+    ["F"] = {
+        width = .5533333333333333,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.51, .24) },
+            { Vector2.new(.12, .54), Vector2.new(.48, .54) },
+        }
+    },
+    ["G"] = {
+        width = .68,
+        vertex = {
+            { Vector2.new(.34, .24), Vector2.new(.12, .42) },
+            { Vector2.new(.34, .24), Vector2.new(.58, .39) },
+            { Vector2.new(.12, .42), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.58, .77) },
+            { Vector2.new(.58, .9), Vector2.new(.58, .59) },
+            { Vector2.new(.58, .59), Vector2.new(.3, .59) },
+        }
+    },
+    ["H"] = {
+        width = .7133333333333334,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .54), Vector2.new(.58, .54) },
+            { Vector2.new(.58, .24), Vector2.new(.58, .9) },
+        }
+    },
     ["I"] = {
         width = .2733333333333333,
         vertex = {
             { Vector2.new(.13, .23), Vector2.new(.13, .9) }
+        }
+    },
+    ["J"] = {
+        width = .5533333333333333,
+        vertex = {
+            { Vector2.new(.24, .9), Vector2.new(.06, .74) },
+            { Vector2.new(.42, .74), Vector2.new(.24, .9) },
+            { Vector2.new(.42, .24), Vector2.new(.42, .74) },
+        }
+    },
+    ["K"] = {
+        width = .54,
+        vertex = {
+            { Vector2.new(.24, .48), Vector2.new(.48, .9) },
+            { Vector2.new(.12, .6), Vector2.new(.48, .24) },
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+        }
+    },
+    ["L"] = {
+        width = .54,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .9), Vector2.new(.51, .9) },
+        }
+    },
+    ["M"] = {
+        width = .8733333333333333,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.44, .9) },
+            { Vector2.new(.44, .9), Vector2.new(.76, .24) },
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.76, .24), Vector2.new(.76, .9) },
+        }
+    },
+    ["N"] = {
+        width = .54,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.44, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.44, .24), Vector2.new(.44, .9) },
+        }
+    },
+    ["O"] = {
+        width = .6866666666666666,
+        vertex = {
+            { Vector2.new(.34, .24), Vector2.new(.12, .42) },
+            { Vector2.new(.34, .24), Vector2.new(.58, .39) },
+            { Vector2.new(.12, .42), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.58, .77) },
+            { Vector2.new(.58, .77), Vector2.new(.58, .39) },
+        }
+    },
+    ["P"] = {
+        width = .6233333333333333,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.39, .24) },
+            { Vector2.new(.39, .24), Vector2.new(.51, .39) },
+            { Vector2.new(.51, .39), Vector2.new(.39, .54) },
+            { Vector2.new(.12, .54), Vector2.new(.39, .54) },
+        }
+    },
+    ["Q"] = {
+        width = .6866666666666666,
+        vertex = {
+            { Vector2.new(.34, .24), Vector2.new(.12, .42) },
+            { Vector2.new(.34, .24), Vector2.new(.58, .39) },
+            { Vector2.new(.12, .42), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.12, .74) },
+            { Vector2.new(.34, .9), Vector2.new(.58, .77) },
+            { Vector2.new(.58, .77), Vector2.new(.58, .39) },
+            { Vector2.new(.58, .9), Vector2.new(.36, .66) },
+        }
+    },
+    ["R"] = {
+        width = .6233333333333333,
+        vertex = {
+            { Vector2.new(.12, .24), Vector2.new(.12, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.39, .24) },
+            { Vector2.new(.39, .24), Vector2.new(.51, .39) },
+            { Vector2.new(.51, .39), Vector2.new(.39, .54) },
+            { Vector2.new(.12, .54), Vector2.new(.39, .54) },
+            { Vector2.new(.36, .54), Vector2.new(.51, .9) },
         }
     },
     ["S"] = {
@@ -238,6 +492,61 @@ local Glyphs = {
             { Vector2.new(.09, .39), Vector2.new(.52, .73) },
             { Vector2.new(.52, .73), Vector2.new(.39, .9) },
             { Vector2.new(.21, .9), Vector2.new(.09, .73) }
+        }
+    },
+    ["T"] = {
+        width = .5966666666666667,
+        vertex = {
+            { Vector2.new(.3, .24), Vector2.new(.3, .9) },
+            { Vector2.new(.06, .24), Vector2.new(.54, .24) },
+        }
+    },
+    ["U"] = {
+        width = .65,
+        vertex = {
+            { Vector2.new(.33, .9), Vector2.new(.54, .69) },
+            { Vector2.new(.12, .69), Vector2.new(.33, .9) },
+            { Vector2.new(.12, .24), Vector2.new(.12, .69) },
+            { Vector2.new(.54, .24), Vector2.new(.54, .69) },
+        }
+    },
+    ["V"] = {
+        width = .6366666666666667,
+        vertex = {
+            { Vector2.new(.09, .24), Vector2.new(.33, .9) },
+            { Vector2.new(.57, .24), Vector2.new(.33, .9) },
+        }
+    },
+    ["W"] = {
+        width = .8866666666666667,
+        vertex = {
+            { Vector2.new(.45, .24), Vector2.new(.64, .9) },
+            { Vector2.new(.64, .9), Vector2.new(.83, .24) },
+            { Vector2.new(.07, .24), Vector2.new(.26, .9) },
+            { Vector2.new(.45, .24), Vector2.new(.26, .9) },
+        }
+    },
+    ["X"] = {
+        width = .6266666666666667,
+        vertex = {
+            { Vector2.new(.1, .24), Vector2.new(.53, .9) },
+            { Vector2.new(.53, .24), Vector2.new(.1, .9) },
+        }
+    },
+    ["Y"] = {
+        width = .6,
+        vertex = {
+            { Vector2.new(.29, .63), Vector2.new(.29, .9) },
+            { Vector2.new(.07, .24), Vector2.new(.29, .63) },
+            { Vector2.new(.51, .24), Vector2.new(.29, .63) },
+        }
+    },
+    ["Z"] = {
+        width = .6,
+        vertex = {
+            { Vector2.new(.06, .24), Vector2.new(.53, .24) },
+            { Vector2.new(.53, .24), Vector2.new(.06, .9) },
+            { Vector2.new(.06, .9), Vector2.new(.53, .9) },
         }
     },
     ["a"] = {
@@ -552,10 +861,8 @@ function NeonText:Render()
             self.TextRenderScaleWidth += 1 / 3
             continue
         end
-        local Glyph = GlyphGenCframes[self.Text:sub(i, i):lower()]
-        if Glyph == nil then
-            continue
-        end
+        local Glyph = GlyphGenCframes[self.Text:sub(i, i):lower()] or GlyphGenCframes["\00"]
+
         for Key, Line in ipairs(Glyph.vertex) do
             self.RenderedBullets[BulletId] = {
                 RayObject = Ray.new(Vector3.zero, Vector3.zero),
@@ -596,7 +903,7 @@ function NeonText:Draw()
 end
 
 --------------------------- test
---[[
+--
 local neonText = NeonText.new()
 neonText.Text = "soy la primera persona en crear este script oh yeahh"
 neonText.CFrame = Player.Character.Head.CFrame * CFrame.new(0, 0, 0)
@@ -609,6 +916,6 @@ while task.wait(.36) do
         neonText:Draw()
     end
 end
-]]
+
 
 return NeonText
