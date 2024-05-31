@@ -12,7 +12,7 @@ local CommandVM = {
         null = 0x00,
         number = 0x01,
         special = 0x02
-    }
+    },
 }
 CommandVM.__index = CommandVM
 
@@ -23,7 +23,6 @@ function CommandVM.new()
     self.Commands = {}
     self.__finished = Instance.new("BindableEvent")
     self.Finished = self.__finished.Event
-    self.Script = {}
 
     return self
 end
@@ -73,29 +72,20 @@ function Commands:CreateCommand(options)
         error("callback required")
     end
 
-    local env = getfenv(options.callback)
+    --local env = getfenv(options.callback)
 
-    function env.
-    function env.global_get(var)
-        return self:RuntimeGlobalGet(var)
-    end
-
-    self.Commands[options.name] = options
+    self.Commands[options.name:upper()] = options
 end
 
 function CommandVM:Open()
     for key, _ in pairs(self.LocalVars) do
         self.LocalVars[key] = nil
     end
-    while #self.Script > 0 do
-        table.remove(self.Script, 1)
-    end
 end
 
---[[
 function CommandVM.global_set(var, value)
     return {
-        type = CommandVM.code.GLOBAL_SET,
+        type = CommandVM.opcode.GLOBAL_SET,
         name = var,
         value = CommandVM.data(value)
     }
@@ -103,13 +93,13 @@ end
 
 function CommandVM.local_set(var, value)
     return {
-        type = CommandVM.code.LOCAL_SET,
+        type = CommandVM.opcode.LOCAL_SET,
         name = var,
         value = CommandVM.data(value)
     }
 end
-]]
 
+-- Return Original Value (eval)
 function CommandVM:GetValue(value)
     return if value.type == CommandVM.valueType.special then
         if value.value.type == CommandVM.opcode.GLOBAL_GET then
@@ -117,7 +107,7 @@ function CommandVM:GetValue(value)
         elseif value.value.type == CommandVM.opcode.LOCAL_GET then
             return self.LocalVars[value.value.value]
         else
-            error("Unknown error")
+            error("Invalid opcode")
         end
     else
         value.value
@@ -156,26 +146,43 @@ function CommandVM:RuntimeLocalGet(var)
     return self:GetValue(self.LocalVars[var])
 end
 
-function CommandVM:Run()
-    for _, Code in ipairs(self.Script) do
+function CommandVM:Execute(script)
+    for _, Code in ipairs(script) do
         if Code.code == CommandVM.code.GLOBAL_SET then
-            self:RuntimeGlobalSet(Code.value)
+            print("SET: ", Code.name, Code.value)
+            self:RuntimeGlobalSet(Code.name, Code.value)
         elseif Code.code == CommandVM.code.LOCAL_SET then
-            self:RuntimeLocalSet(Code.value)
+            self:RuntimeLocalSet(Code.name, Code.value)
         elseif Code.code == CommandVM.code.CALL then
             local Command = self.Commands[Code.name]
+            local Params = Code.value
+            local DecodedParams = {}
+
+            for _, Raw in ipairs(Params) do
+                table.insert(DecodedParams, self:GetValue(Raw))
+            end
+
+            Command(unpack(DecodedParams))
         end
     end
 end
 
 local test = CommandVM.new()
+test:CreateCommand({
+    name = "echo",
+    callback = function(...)
+        print(...)
+    end
+})
 
 test:Open()
-test:GlobalSet("abc", 123)
-test:LocalSet("local", 334)
-test:Close()
-
-test:Start()
+test:Execute({
+    test.global_set("hello", "Hole")
+    test.call(
+        "echo",
+        test.global_get("hello")
+    )
+})
 
 
 return CommandVM

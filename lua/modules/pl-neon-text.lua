@@ -1001,7 +1001,7 @@ function NeonText:Render()
             self.TextRenderScaleWidth += 1 / 3
             continue
         end
-        local Glyph = GlyphGenCframes[self.Text:sub(Start, End):lower()] or GlyphGenCframes["\00"]
+        local Glyph = GlyphGenCframes[self.Text:sub(Start, End)] or GlyphGenCframes["\00"]
 
         for Key, Line in ipairs(Glyph.vertex) do
             self.RenderedBullets[BulletId] = {
@@ -1043,7 +1043,7 @@ function NeonText:Draw()
 end
 
 --------------------------- test
---
+--[[
 local neonText = NeonText.new()
 neonText.Text = "soy la primera persona en crear este script oh yeahh"
 neonText.CFrame = Player.Character.Head.CFrame * CFrame.new(0, 0, 0)
@@ -1056,6 +1056,6 @@ while task.wait(.36) do
         neonText:Draw()
     end
 end
-
+]]
 
 return NeonText
