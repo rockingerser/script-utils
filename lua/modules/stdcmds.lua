@@ -10,7 +10,7 @@ return (function(VM)
             args = {
                 {
                     name = "data",
-                    datatypes = { "any" },
+                    type = { "any" },
                     description = "The data to print."
                 }
             },
