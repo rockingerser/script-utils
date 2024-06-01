@@ -26,7 +26,34 @@ function Parser:ParseString(script)
 
     local i = 0
 
-    local function 
+    local function parseCommand()
+        local CmdName = script:match("%w*", i + 1)
+        if CmdName == nil or script:sub(i, i) ~= self.Prefix then
+            error(i..": Expected command.")
+        end
+        i += #CmdName
+        return CmdName
+    end
+
+    local function parseNumber()
+        local number = script:match("%d", i)
+        if number == nil then
+            error(i..": Expected number.")
+        end
+        i += #number
+        return tonumber(number)
+    end
+
+    local function parseString()
+        if script:sub(i, i) ~= "\"" then
+            error(i..": Expected string.")
+        end
+    end
+
+    local function parseArgs(ForCommand)
+        local data = ForCommand
+    end
+
     while i < #script do
         i += 1
 

@@ -6,7 +6,6 @@ return (function(VM)
             VM:Print(data)
         end,
         level = 0,
-        lib = StdLib,
         __data = {
             args = {
                 {
@@ -18,14 +17,18 @@ return (function(VM)
             description = "Prints data to the console"
         }
     })
-    if game then
-        local 
-
-        VM:CreateCommand({
-            name = "speed",
-            callback = function(newSpeed)
-                lo
-            end
-        })
-    end
+    VM:CreateCommand({
+        name = "true",
+        callback = function()
+            return true
+        end,
+        level = 0
+    })
+    VM:CreateCommand({
+        name = "false",
+        callback = function()
+            return false
+        end,
+        level = 0
+    })
 end)
