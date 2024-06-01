@@ -16,8 +16,8 @@ function Parser.new(VM)
     local self = setmetatable({}, Parser)
 
     self.CmdPrefix = "!"
-    self.LocalPrefix = "$"
-    self.GlobalPrefix = "&"
+    --self.LocalPrefix = "$" Supporting them in a future
+    --self.GlobalPrefix = "&"
     self.VM = VM
 
     return self
@@ -33,12 +33,7 @@ function Parser.error(msg, where)
 end
 
 function Parser:ParseString(script)
-    local Whitespace = true
-    local Output = {
-        ok = true,
-        script = {}
-    }
-
+    local output = {}
     local i = 0
 
     local function parseCommand()
@@ -97,10 +92,13 @@ function Parser:ParseString(script)
 
         for _, arg in ipairs(args) do
             if table.find(self.datatypes, arg.type) == nil or arg.name == nil then
-                error(string.format("fatalerror: Command %q contains bad params and cannot be parsed", ForCommand.name), i)
+                error(string.format("fatalerror: Command %q contains bad params and cannot be parsed", forCommand.name), i)
             end
             
             local parsed
+            while script:sub(i, i):find("%s") do
+                i += 1
+            end
             if script:sub(i, i):find("%w") then
                 local command = parseCommand()
                 local cmdArgs = parseArgs(command)
@@ -127,15 +125,19 @@ function Parser:ParseString(script)
 
         if char == self.CmdPrefix then
             i += 1
-            parseCommand()
+            local command = parseCommand()
+            local cmdArgs = parseArgs(command)
+            table.insert(output, self.VM.call(command.name, unpack(cmdArgs)))
+        else
+            self.error(string.format("syntaxerror: Expected %q", self.CmdPrefix), i)
         end
     end
 
-    return Output
+    return output
 end
 
 local parser = Parser.new()
 
-parser:ParseString("!helllo")
+parser:ParseString([[!helllo]])
 
 return Parser
