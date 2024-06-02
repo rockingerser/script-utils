@@ -32,134 +32,130 @@ function Parser.error(msg, where)
     }]]
 end
 
-function Parser:ParseString(script)
-    local output = {}
-    local i = 0
 
-    local function parseCommand(init)
-        i = init
-        local CmdName = script:match("%w+", i)
-        if CmdName == nil then
-            return
-        end
-        i += #CmdName
-        local Cmd = self.VM.Commands[CmdName]
-        if Cmd == nil then
-            return
-        end
-        return Cmd
+function Parser:ParseCommand(init)
+    self.i = init
+    local CmdName = self.script:match("%w+", self.i)
+    if CmdName == nil then
+        return
+    end
+    self.i += #CmdName
+    local Cmd = self.VM.Commands[CmdName]
+    if Cmd == nil then
+        return
+    end
+    return Cmd
+end
+
+function Parser:ParseNumber(init)
+    self.i = init
+    local number = self.script:match("%d", self.i)
+    if number == nil then
+        return
+    end
+    self.i += #number
+    return tonumber(number)
+end
+
+function Parse:ParseString(init)
+    self.i = init
+    if self.script:sub(self.i, self.i) ~= "\"" then
+        return
     end
 
-    local function parseNumber(init)
-        i = init
-        local number = script:match("%d", i)
-        if number == nil then
-            return
-        end
-        i += #number
-        return tonumber(number)
-    end
+    local str = ""
+    self.i += 1
 
-    local function parseString(init)
-        i = init
-        if script:sub(i, i) ~= "\"" then
-            return
-        end
-
-        local str = ""
-        i += 1
-
-        repeat
-            local char = script:sub(i, i)
-            if char == "\\" then
-                if i + 1 > #script then
-                    return
-                end
-                str = str..script:sub(i + 1, i + 1)
-                i += 2
-            else
-                str = str..char
-                i += 1
-                if i > #script then
-                    return
-                end
-            end
-        until script:sub(i, i) == "\""
-
-        return str
-    end
-
-    local function parseArrayTable()
-
-    local function parsePlName(init)
-        i = init
-        if script:sub(i, i) ~= "<" then
-            return
-        end
-
-        local str = ""
-        i += 1
-
-        repeat
-            local char = script:sub(i, i)
-            str = str..char
-            i += 1
-            if i > #script then
+    repeat
+        local char = self.script:sub(self.i, self.i)
+        if char == "\\" then
+            if self.i + 1 > #self.script then
                 return
             end
-        until script:sub(i, i) == ">"
+            str = str..self.script:sub(self.i + 1, self.i + 1)
+            self.i += 2
+        else
+            str = str..char
+            self.i += 1
+            if self.i > #self.script then
+                return
+            end
+        end
+    until self.script:sub(self.i, self.i) == "\""
 
-        return str
+    return str
+end
+
+function Parse:ParseArrayTableArgs(init)
+    self.i = init
+    if self.script:sub(self.i, self.i) ~= "[" then
+        return
+    end
+    
+end
+
+function Parser:ParsePlName(init)
+    self.i = init
+    if self.script:sub(self.i, self.i) ~= "<" then
+        return
     end
 
-    local function parseArgs(forCommand)
-        local args = forCommand.args or {}
-        local parsedArgs = {}
+    local str = ""
+    self.i += 1
 
-        for _, arg in ipairs(args) do
-            --[[if arg. table.find(self.datatypes, arg.type) == nil then
-                self.error(string.format("fatalerror: Command %q contains bad params and cannot be parsed", forCommand.name), i)
-            end]]
-            
-            while script:sub(i, i):find("%s") do
-                i += 1
-            end
+    repeat
+        local char = self.script:sub(self.i, self.i)
+        str = str..char
+        self.i += 1
+        if self.i > #self.script then
+            return
+        end
+    until self.script:sub(self.i, self.i) == ">"
 
-            local parsed
-            if script:sub(i, i):find("%w") then
-                local command = parseCommand()
-                --[[if arg.type ~= nil and #arg.type command.returns ~= nil and #command.returns > 0 then
-                    for _, Type in ipairs(command.returns) do
-                        if table.find(arg.type, Type) == nil and (table.find(arg.type, "player") == nil and table.find(arg.type, "string") == nil or Type ~= "string" and Type ~= "player") then
-                            self.error(string.format("typeerror: Cannot convert a %s into a %s", Type, table.concat(arg.type, " | ")), i)
-                        end
-                    end
-                end]]
-                local cmdArgs = parseArgs(command)
-                parsed = self.VM.call(command.name, unpack(cmdArgs))
-            else
-                local init = i
-                parsed = parseNumber(init) or parseString(init) 
-            end
-            table.insert(parsedArgs, parsed)
+    return str
+end
+
+function Parser:ParseArgs(forCommand)
+    local args = forCommand.args or {}
+    local parsedArgs = {}
+
+    for _, arg in ipairs(args) do
+        while self.script:sub(self.i, self.i):find("%s") do
+            self.i += 1
         end
 
-        return parsedArgs
+        local parsed = nil
+        if self.script:sub(self.i, self.i):find("%w") then
+            local command = self:ParseCommand()
+            local cmdArgs = self:ParseArgs(command)
+            parsed = self.VM.call(command.name, unpack(cmdArgs))
+        else
+            local init = self.i
+            parsed = self:ParseNumber(init) or self:ParseString(init) or self:ParseArrayTableArgs(init) or self:ParsePlName(init)
+        end
+        table.insert(parsedArgs, parsed)
     end
+    return parsedArgs
+end
 
-    while i < #script do
-        i += 1
+function Parser:ParseString(script)
+    local output = {}
+    self.script = script
+    self.i = 0
 
-        local char = script:sub(i, i)
+    while self.i < #self.script do
+        self.i += 1
+
+        local char = self.script:sub(self.i, self.i)
 
         if char:find("%s") then
             continue
         end
 
         if char == self.CmdPrefix then
-            i += 1
-            local command = parseCommand()
-            local cmdArgs = parseArgs(command)
+            self.i += 1
+            local command = self:ParseCommand()
+            local cmdArgs = self:ParseArgs(command)
             table.insert(output, self.VM.call(command.name, unpack(cmdArgs)))
         else
             self.error(string.format("syntaxerror: Expected %q", self.CmdPrefix), i)
