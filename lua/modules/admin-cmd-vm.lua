@@ -8,10 +8,13 @@ local CommandVM = {
         COMMAND_CALL = 0x05,
         GETTER_CALL = 0x06
     },
-    valueType = {
-        null = 0x00,
-        number = 0x01,
-        special = 0x02
+    datatypes = {
+        number = 0x00,
+        string = 0x01,
+        boolean = 0x02,
+        table = 0x03,
+        player = 0x04,
+        "nil" = 0x05
     },
 }
 CommandVM.__index = CommandVM
@@ -26,13 +29,13 @@ function CommandVM.new()
 end
 
 function CommandVM.type(value)
-    local valueType = typeof(value)
-    return if valueType == "number" then
+    local valueType = CommandVM.typeof(value)
+    return valueType:lower()--[[if valueType == "number" then
         CommandVM.valueType.number
     elseif valueType == "table" then
         CommandVM.valueType.special
     else
-        CommandVM.valueType.null
+        CommandVM.valueType.null]]
 end
 
 function CommandVM.global_get(var)
@@ -56,7 +59,7 @@ end
 function CommandVM.const(value)
     return {
         opcode = CommandVM.opcode.CONST,
-        --type = CommandVM.type(value),
+        type = CommandVM.type(value),
         value = CommandVM.value(value)
     }
 end

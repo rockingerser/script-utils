@@ -5,9 +5,9 @@ local Parser = {
         "number",
         "string",
         "boolean",
-        "array",
+        "table",
         "player",
-        "any"
+        "nil"
     }
 }
 Parser.__index = Parser
@@ -36,42 +36,44 @@ function Parser:ParseString(script)
     local output = {}
     local i = 0
 
-    local function parseCommand()
-        local CmdName = script:match("%w*", i + 1)
+    local function parseCommand(init)
+        i = init
+        local CmdName = script:match("%w+", i)
         if CmdName == nil then
-            self.error("syntaxerror: Expected command", i)
+            return
         end
         i += #CmdName
         local Cmd = self.VM.Commands[CmdName]
         if Cmd == nil then
-            self.error(string.format("nameerror: Command %q not found", CmdName), i)
+            return
         end
         return Cmd
     end
 
-    local function parseNumber()
+    local function parseNumber(init)
+        i = init
         local number = script:match("%d", i)
         if number == nil then
-            self.error("syntaxerror: Expected number", i)
+            return
         end
         i += #number
         return tonumber(number)
     end
 
-    local function parseString()
+    local function parseString(init)
+        i = init
         if script:sub(i, i) ~= "\"" then
-            self.error("syntaxerror: Expected string", i)
+            return
         end
 
         local str = ""
-        local startIndex = i
         i += 1
 
         repeat
             local char = script:sub(i, i)
             if char == "\\" then
                 if i + 1 > #script then
-                    self.error("syntaxerror: Malformed string", startIndex)
+                    return
                 end
                 str = str..script:sub(i + 1, i + 1)
                 i += 2
@@ -79,34 +81,65 @@ function Parser:ParseString(script)
                 str = str..char
                 i += 1
                 if i > #script then
-                    self.error("syntaxerror: Malformed string", startIndex)
+                    return
                 end
             end
         until script:sub(i, i) == "\""
+
+        return str
+    end
+
+    local function parseArrayTable()
+
+    local function parsePlName(init)
+        i = init
+        if script:sub(i, i) ~= "<" then
+            return
+        end
+
+        local str = ""
+        i += 1
+
+        repeat
+            local char = script:sub(i, i)
+            str = str..char
+            i += 1
+            if i > #script then
+                return
+            end
+        until script:sub(i, i) == ">"
+
+        return str
     end
 
     local function parseArgs(forCommand)
-        local data = forCommand.__data or {}
-        local args = data.args or {}
+        local args = forCommand.args or {}
         local parsedArgs = {}
 
         for _, arg in ipairs(args) do
-            if table.find(self.datatypes, arg.type) == nil or arg.name == nil then
-                error(string.format("fatalerror: Command %q contains bad params and cannot be parsed", forCommand.name), i)
-            end
+            --[[if arg. table.find(self.datatypes, arg.type) == nil then
+                self.error(string.format("fatalerror: Command %q contains bad params and cannot be parsed", forCommand.name), i)
+            end]]
             
-            local parsed
             while script:sub(i, i):find("%s") do
                 i += 1
             end
+
+            local parsed
             if script:sub(i, i):find("%w") then
                 local command = parseCommand()
+                --[[if arg.type ~= nil and #arg.type command.returns ~= nil and #command.returns > 0 then
+                    for _, Type in ipairs(command.returns) do
+                        if table.find(arg.type, Type) == nil and (table.find(arg.type, "player") == nil and table.find(arg.type, "string") == nil or Type ~= "string" and Type ~= "player") then
+                            self.error(string.format("typeerror: Cannot convert a %s into a %s", Type, table.concat(arg.type, " | ")), i)
+                        end
+                    end
+                end]]
                 local cmdArgs = parseArgs(command)
                 parsed = self.VM.call(command.name, unpack(cmdArgs))
-            elseif arg.type == "number" then
-                parsed = self.VM.const(parseNumber())
-            elseif arg.type == "string" then
-                parsed = self.VM.const(parseString())
+            else
+                local init = i
+                parsed = parseNumber(init) or parseString(init) 
             end
             table.insert(parsedArgs, parsed)
         end
