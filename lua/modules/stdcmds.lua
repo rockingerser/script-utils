@@ -1,5 +1,8 @@
--- Standard commands
+-- Basic commands
 return (function(VM)
+    local Players = game:GetService("Players")
+    local Player = Players.LocalPlayer
+
     VM:CreateCommand({
         name = "echo",
         callback = function(data)
@@ -44,9 +47,22 @@ return (function(VM)
     })
     VM:CreateCommand({
         name = "others",
-        callback = function(arg)
+        callback = function()
+            local players = Players:GetPlayers()
+            table.remove(players, table.find(players, Player))
+            return players
         end,
-        level = 0,
+        level = 3,
+        description = "Returns a table containing all the players in the game but you",
+        returns = "player[]"
+    })
+    VM:CreateCommand({
+        name = "all",
+        callback = function()
+            return Players:GetPlayers()
+        end,
+        level = 3,
+        description = "Returns a table containing all the players in the game",
         returns = "player[]"
     })
 end)

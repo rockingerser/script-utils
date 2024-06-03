@@ -97,6 +97,18 @@ function CommandVM:Open()
     end
 end
 
+function CommandVM:Print(...)
+    print(...)
+end
+
+function CommandVM:Warn(...)
+    warn(...)
+end
+
+function CommandVM:Error(...)
+    warn(...)
+end
+
 function CommandVM.global_set(var, value)
     return {
         opcode = CommandVM.opcode.GLOBAL_SET,

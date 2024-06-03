@@ -1,8 +1,18 @@
+if getgenv().__z_pl_admin_running__ then
+    return
+end
+
+getgenv().__z_pl_admin_running__ = true
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Teams = game:GetService("Teams")
+local CoreGui = game:GetService("CoreGui")
+local AdminScreenGui = Instance.new("ScreenGui")
+local SpoofIndicatorPart = Instance.new("Part")
+local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
 local Remote = workspace.Remote
 local Player = Players.LocalPlayer
 local TeamEvent = Remote.TeamEvent
@@ -15,15 +25,20 @@ local Neutral = Teams.Neutral
 local Criminals = Teams.Criminals
 local CriminalSpawn = workspace["Criminals Spawn"]:FindFirstChildOfClass("SpawnLocation")
 local RandGen = Random.new()
-local CharSpoofsOrder = {}
-local CharSpoofs = {}
-local CharSpoofsCurrent = {}
-local CharSpoofsOldValues = {}
-local HumSpoofsOrder = {}
-local HumSpoofs = {}
-local HumSpoofsCurrent = {}
-local HumSpoofsOldValues = {}
-local Secret = HttpService:GenerateGUID()
+local SpoofsOrder = {}
+local Spoofs = {}
+local SpoofsNames = {}
+local Secret =  HttpService:GenerateGUID()
+
+AdminScreenGui.Name = HttpService:GenerateGUID()
+AdminScreenGui.ZIndex = -1
+
+SpoofIndicatorPart.Name = HttpService:GenerateGUID(false)
+SpoofIndicatorPart.Anchored = true
+SpoofIndicatorPart.Size = Vector3.new(2, 2, 1)
+SpoofIndicatorPart.CanCollide = false
+SpoofIndicatorPart.Transparency = 1
+
 
 local function WaitFirst(...)
     local Event = Instance.new("BindableEvent")
@@ -44,27 +59,15 @@ local function WaitFirst(...)
     return Event.Event:Wait()
 end
 
-local function SpoofProperty(Name, Priority, Property, Value, Type)
-    if Type ~= "character" and Type ~= "humanoid" then
-        error(string.format("Invalid type %q", Type))
-    end
-
-    local TypeChar = Type == "character"
-    local SpoofsOrder = if TypeChar then CharSpoofsOrder else HumSpoofsOrder
-    local Spoofs = if TypeChar then CharSpoofs else HumSpoofs
-    local SpoofsCurrent = if TypeChar then CharSpoofsCurrent else HumSpoofsCurrent
-    local IndexOrder = 1
-
-    if Spoofs[Property] == nil then
-        Spoofs[Property] = {}
-        SpoofsOrder[Property] = {}
-    end
-
-    if Spoofs[Property][Name] ~= nil then
+local function SpoofPosition(Name, Priority, Value)
+    if SpoofsNames[Name] ~= nil then
+        SpoofsNames[Names].value = Value
         return
     end
 
-    for _, OtherPriority in ipairs(SpoofsOrder[Property]) do
+    local IndexOrder = 1
+
+    for _, OtherPriority in ipairs(SpoofsOrder) do
         if Priority < OtherPriority then
             IndexOrder += 1
             continue
@@ -72,21 +75,34 @@ local function SpoofProperty(Name, Priority, Property, Value, Type)
         break
     end
 
-    table.insert(SpoofsOrder[Property], IndexOrder, Priority)
-    table.insert(Spoofs[Property], IndexOrder, Value)
+    table.insert(SpoofsOrder, IndexOrder, Priority)
+    local SpoofData = {
+        priority = Priority,
+        value = Value
+    }
 
-    if IndexOrder == 1 then
-        SpoofsCurrent[Property] = Value
-    end
+    table.insert(Spoofs, IndexOrder, SpoofData)
+    SpoofsNames[Name] = SpoofData
 end
 
-local function UnspoofProperty(Name, Property, Type)
+local function UnspoofPosition(Name)
+    if SpoofsNames[Name] == nil then
+        return
+    end
 
+    local SpoofToRemove = SpoofsNames[Name]
+    local IndexOrder = table.find(Spoofs, SpoofToRemove)
+
+    table.remove(SpoofsOrder, IndexOrder)
+    table.remove(Spoofs, IndexOrder)
+    SpoofsNames[Name] = nil
 end
 
 local function CharacterAdded(NewCharacter)
     local player = Players:GetPlayerFromCharacter(NewCharacter)
     local Humanoid = NewCharacter:WaitForChild("Humanoid")
+    local Root = NewCharacter:WaitForChild("HumanoidRootPart")
+    local SpoofsOldCFrame
 
     if player ~= Player then
         local HealthChanged = nil
@@ -101,16 +117,21 @@ local function CharacterAdded(NewCharacter)
     end
 
     local SpoofServer = RunService.PostSimulation:Connect(function()
-        for Key, Value in pairs(CharSpoofsCurrent) do
-            CharSpoofsOldValues[Key] = NewCharacter[Key]
-            NewCharacter[Key] = Value
+        local SpoofsCurrent = Spoofs[1]
+        SpoofIndicatorPartOutline.Transparency = 1
+        if SpoofsCurrent then
+            SpoofsOldCFrame = Root.CFrame
+            SpoofIndicatorPartOutline.Transparency = 0
+            SpoofIndicatorPartOutline.Color = Color3.fromHSV(os.clock() * .3 % 1, 1, 1)
+            SpoofIndicatorPart.CFrame = SpoofsCurrent.value
+            Root.CFrame = SpoofsCurrent.value
         end
     end)
 
     RunService:BindToRenderStep(Secret, 198, function()
-        for Key, Value in pairs(CharSpoofsOldValues) do
-            NewCharacter[Key] = Value
-            CharSpoofsOldValues[Key] = nil
+        if SpoofsOldCFrame then
+            Root.CFrame = SpoofsOldCFrame
+            SpoofsOldCFrame = nil
         end
     end)
 
@@ -120,9 +141,6 @@ local function CharacterAdded(NewCharacter)
         SpoofServer:Disconnect()
         RunService:UnbindFromRenderStep(Secret)
     end)()
-
-    table.clear(CharSpoofsOldValues)
-    table.clear(HumSpoofsOldValues)
 end
 
 local function PlayerAdded(NewPlayer)
