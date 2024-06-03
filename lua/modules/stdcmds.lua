@@ -13,7 +13,7 @@ return (function(VM)
             }
         },
         description = "Prints data to the console",
-        returns = { "nil" }
+        returns = "nil"
     })
     VM:CreateCommand({
         name = "true",
@@ -22,7 +22,7 @@ return (function(VM)
         end,
         level = 0,
         description = "Returns true",
-        returns = { "boolean" }
+        returns = "boolean"
     })
     VM:CreateCommand({
         name = "false",
@@ -31,6 +31,22 @@ return (function(VM)
         end,
         level = 0,
         description = "Returns false",
-        returns = { "boolean" }
+        returns = "boolean"
+    })
+    VM:CreateCommand({
+        name = "nil",
+        callback = function()
+            return nil
+        end,
+        level = 0,
+        description = "Returns nil",
+        returns = "nil"
+    })
+    VM:CreateCommand({
+        name = "others",
+        callback = function(arg)
+        end,
+        level = 0,
+        returns = "player[]"
     })
 end)

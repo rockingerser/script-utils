@@ -15,21 +15,121 @@ local Neutral = Teams.Neutral
 local Criminals = Teams.Criminals
 local CriminalSpawn = workspace["Criminals Spawn"]:FindFirstChildOfClass("SpawnLocation")
 local RandGen = Random.new()
-local SpoofOrder = {}
-local Spoofs = {}
-local CurrentSpoofs = {}
-local OldValues = {}
+local CharSpoofsOrder = {}
+local CharSpoofs = {}
+local CharSpoofsCurrent = {}
+local CharSpoofsOldValues = {}
+local HumSpoofsOrder = {}
+local HumSpoofs = {}
+local HumSpoofsCurrent = {}
+local HumSpoofsOldValues = {}
+local Secret = HttpService:GenerateGUID()
 
-RunService.PostSimulation:Connect(function()
-    for Key, Value in pairs(CurrentSpoofs) do
-        OldValues[Key] = 
+local function WaitFirst(...)
+    local Event = Instance.new("BindableEvent")
+    local Events = {}
+
+    for _, event in ipairs({...}) do
+        table.insert(Events, event)
+        event:Connect(function(...)
+            for _, EventTarget in ipairs(Events) do
+                EventTarget:Disconnect()
+            end
+
+            Event:Fire(event, ...)
+            Event:Destroy()
+        end)
     end
-end)
-RunService:BindToRenderStep(HttpService:GenerateGUID(false), 198, function()
-end)
 
-local function SpoofProperty(Name, Value, Priority)
+    return Event.Event:Wait()
+end
 
+local function SpoofProperty(Name, Priority, Property, Value, Type)
+    if Type ~= "character" and Type ~= "humanoid" then
+        error(string.format("Invalid type %q", Type))
+    end
+
+    local TypeChar = Type == "character"
+    local SpoofsOrder = if TypeChar then CharSpoofsOrder else HumSpoofsOrder
+    local Spoofs = if TypeChar then CharSpoofs else HumSpoofs
+    local SpoofsCurrent = if TypeChar then CharSpoofsCurrent else HumSpoofsCurrent
+    local IndexOrder = 1
+
+    if Spoofs[Property] == nil then
+        Spoofs[Property] = {}
+        SpoofsOrder[Property] = {}
+    end
+
+    if Spoofs[Property][Name] ~= nil then
+        return
+    end
+
+    for _, OtherPriority in ipairs(SpoofsOrder[Property]) do
+        if Priority < OtherPriority then
+            IndexOrder += 1
+            continue
+        end
+        break
+    end
+
+    table.insert(SpoofsOrder[Property], IndexOrder, Priority)
+    table.insert(Spoofs[Property], IndexOrder, Value)
+
+    if IndexOrder == 1 then
+        SpoofsCurrent[Property] = Value
+    end
+end
+
+local function UnspoofProperty(Name, Property, Type)
+
+end
+
+local function CharacterAdded(NewCharacter)
+    local player = Players:GetPlayerFromCharacter(NewCharacter)
+    local Humanoid = NewCharacter:WaitForChild("Humanoid")
+
+    if player ~= Player then
+        local HealthChanged = nil
+        HealthChanged = Humanoid.HealthChanged:Connect(function()
+            if player.Team == Inmates then
+                HealthChanged:Disconnect()
+                GunKillPlayers(player)
+            end
+        end)
+        
+        return
+    end
+
+    local SpoofServer = RunService.PostSimulation:Connect(function()
+        for Key, Value in pairs(CharSpoofsCurrent) do
+            CharSpoofsOldValues[Key] = NewCharacter[Key]
+            NewCharacter[Key] = Value
+        end
+    end)
+
+    RunService:BindToRenderStep(Secret, 198, function()
+        for Key, Value in pairs(CharSpoofsOldValues) do
+            NewCharacter[Key] = Value
+            CharSpoofsOldValues[Key] = nil
+        end
+    end)
+
+    coroutine.wrap(function()
+        WaitFirst(Humanoid.Died, player.CharacterRemoving)
+
+        SpoofServer:Disconnect()
+        RunService:UnbindFromRenderStep(Secret)
+    end)()
+
+    table.clear(CharSpoofsOldValues)
+    table.clear(HumSpoofsOldValues)
+end
+
+local function PlayerAdded(NewPlayer)
+    NewPlayer.CharacterAdded:Connect(CharacterAdded)
+    if NewPlayer.Character then
+        CharacterAdded(NewPlayer.Character)
+    end
 end
 
 local function GetCharacter(Wait, TargetPlayer)
@@ -167,6 +267,8 @@ local function GunKillPlayers(players)
     ReloadEvent:FireServer(Gun)
 end
 
-task.wait(3)
+Players.PlayerAdded:Connect(PlayerAdded)
 
-KillAllPlayers()
+for _, player in ipairs(Players:GetPlayers()) do
+    PlayerAdded(player)
+end

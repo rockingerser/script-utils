@@ -211,7 +211,8 @@ vm:CreateCommand({
             description = "The player to greet"
         }
     },
-    description = "Testing purposes"
+    description = "Testing purposes",
+    returns = "nil"
 })
 ]]
 
