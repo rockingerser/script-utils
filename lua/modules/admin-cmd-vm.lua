@@ -1,3 +1,5 @@
+-- Simple Admin commands VM
+
 local CommandVM = {
     opcode = {
         GLOBAL_SET = 0x00,
@@ -14,10 +16,27 @@ local CommandVM = {
         boolean = 0x02,
         table = 0x03,
         player = 0x04,
-        "nil" = 0x05
+        ["nil"] = 0x05
     },
 }
 CommandVM.__index = CommandVM
+
+local Players = game:GetService("Players")
+--[[ for testing outside Roblox
+local Players = {}
+local __ppl = {
+    { Name = "Playel2", DisplayName = "MyFakeName1" },
+    { Name = "Playel2", DisplayName = "ImFfinee" },
+    { Name = "Playel3", DisplayName = "HesOk" },
+    { Name = "Playel4", DisplayName = "Co0lKiBd" },
+    { Name = "Playel55", DisplayName = "MyFakeName1" },
+    { Name = "Playel6", DisplayName = "MyFakeName1" },
+}
+
+function Players:GetPlayers()
+    return __ppl
+end
+]]
 
 function CommandVM.new()
     local self = setmetatable({}, CommandVM)
@@ -29,26 +48,21 @@ function CommandVM.new()
 end
 
 function CommandVM.type(value)
-    local valueType = CommandVM.typeof(value)
-    return valueType:lower()--[[if valueType == "number" then
-        CommandVM.valueType.number
-    elseif valueType == "table" then
-        CommandVM.valueType.special
-    else
-        CommandVM.valueType.null]]
+    local valueType = typeof(value)
+    return CommandVM.datatypes[valueType:lower()]
 end
 
 function CommandVM.global_get(var)
     return {
         opcode = CommandVM.opcode.GLOBAL_GET,
-        value = var
+        value = var:upper()
     }
 end
 
 function CommandVM.local_get(var)
     return {
         opcode = CommandVM.opcode.LOCAL_GET,
-        value = var
+        value = var:upper()
     }
 end
 
@@ -56,10 +70,10 @@ function CommandVM.value(value)
     return value
 end
 
-function CommandVM.const(value)
+function CommandVM.const(value, overrideType)
     return {
         opcode = CommandVM.opcode.CONST,
-        type = CommandVM.type(value),
+        type = overrideType or CommandVM.type(value),
         value = CommandVM.value(value)
     }
 end
@@ -86,7 +100,7 @@ end
 function CommandVM.global_set(var, value)
     return {
         opcode = CommandVM.opcode.GLOBAL_SET,
-        name = var,
+        name = var:upper(),
         value = value
     }
 end
@@ -94,7 +108,7 @@ end
 function CommandVM.local_set(var, value)
     return {
         opcode = CommandVM.opcode.LOCAL_SET,
-        name = var,
+        name = var:upper(),
         value = value
     }
 end
@@ -103,19 +117,31 @@ end
 function CommandVM:GetValue(value)
     local opcode = value.opcode
     if opcode == self.opcode.GLOBAL_GET then
-        return self.GlobalVars[value.value].value
+        return self:GetValue(self.GlobalVars[value.value])
     elseif opcode == self.opcode.LOCAL_GET then
-        return self.LocalVars[value.value].value
-    elseif opcode == self.opcode.CALL then
+        return self:GetValue(self.LocalVars[value.value])
+    elseif opcode == self.opcode.CALL or opcode == self.opcode.CONST and typeof(value.value) == "table" then
         local Params = value.value
         local DecodedParams = {}
 
-        for _, Raw in ipairs(Params) do
-            table.insert(DecodedParams, self:GetValue(Raw))
+        for i, Raw in ipairs(Params) do
+            DecodedParams[i] = self:GetValue(Raw)
         end
 
-        return self.Commands[value.name](unpack(DecodedParams))
+        if opcode == self.opcode.CONST then
+            return DecodedParams
+        end
+        return self.Commands[value.name].callback(unpack(DecodedParams))
     elseif opcode == self.opcode.CONST then
+        if value.type == self.datatypes.player then
+            local PlayerName = value.value
+            for _, Player in ipairs(Players:GetPlayers()) do
+                if Player.DisplayName:lower():find("^"..PlayerName:lower()) then
+                    return Player
+                end
+            end
+            return
+        end
         return value.value
     end
 end
@@ -123,7 +149,7 @@ end
 function CommandVM.call(name, ...)
     return {
         opcode = CommandVM.opcode.CALL,
-        name = name,
+        name = name:upper(),
         value = {...}
     }
 end
@@ -147,25 +173,46 @@ end
 function CommandVM:RuntimeLocalGet(var)
     return self:GetValue(self.LocalVars[var])
 end
-
+--[[
+            level param here pls |
+                                 v   ]]
 function CommandVM:Execute(script)
     for _, Code in ipairs(script) do
         if Code.opcode == CommandVM.opcode.GLOBAL_SET then
-            self:RuntimeGlobalSet(Code.name, Code.value)
+            self:RuntimeGlobalSet(Code.name, self:GetValue(Code.value))
         elseif Code.opcode == CommandVM.opcode.LOCAL_SET then
-            self:RuntimeLocalSet(Code.name, Code.value)
+            self:RuntimeLocalSet(Code.name, self:GetValue(Code.value))
         elseif Code.opcode == CommandVM.opcode.CALL then
             local Command = self.Commands[Code.name].callback
             local Params = Code.value
             local DecodedParams = {}
 
-            for _, Raw in ipairs(Params) do
-                table.insert(DecodedParams, self:GetValue(Raw))
+            for i, Raw in ipairs(Params) do
+                DecodedParams[i] = self:GetValue(Raw)
             end
 
             Command(unpack(DecodedParams))
         end
     end
 end
+
+--[[
+local vm = CommandVM.new()
+vm:CreateCommand({
+    name = "greet",
+    callback = function(plt)
+        print("Hello, "..plt.DisplayName.."!")
+    end,
+    level = 0,
+    args = {
+        {
+            name = "targetpl",
+            type = "player",
+            description = "The player to greet"
+        }
+    },
+    description = "Testing purposes"
+})
+]]
 
 return CommandVM
