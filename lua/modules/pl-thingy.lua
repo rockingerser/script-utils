@@ -34,6 +34,7 @@ local SpoofsNames = {}
 local KillingPlayers = {}
 local PendingNuke = {}
 local OneshotTargetPlayers = {}
+local NoGunsTargetPlayers = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
@@ -139,10 +140,16 @@ function CharacterAdded(NewCharacter)
         end
     end)
 
-    local HealthChanged = nil
+    local HealthChanged, NoGunsCheck = nil, nil
     HealthChanged = Humanoid.HealthChanged:Connect(function()
-        if player.Team == Inmates or table.find(OneshotTargetPlayers, player) then
+        if table.find(OneshotTargetPlayers, player) then
             HealthChanged:Disconnect()
+            KillPlayers(player)
+        end
+    end)
+    NoGunsCheck = player.Backpack.ChildAdded:Connect(function(Gun)
+        if player.Team ~= Guards and table.find(NoGunsTargetPlayers, player) and Gun:WaitForChild("GunStates", .9) then
+            NoGunsCheck:Disconnect()
             KillPlayers(player)
         end
     end)
@@ -230,6 +237,10 @@ function SwitchToTeam(Team, Yield)
         if Yield then
             Player:GetPropertyChangedSignal("Team"):Wait()
         end
+        return
+    end
+
+    if Team ~= Guards and Team ~= Inmates and Team ~= Neutral then
         return
     end
 
@@ -439,6 +450,33 @@ function UnoneshotPlayers(players)
     end
 end
 
+function NoGunsPlayers(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+    for _, player in pairs(players) do
+        if table.find(NoGunsTargetPlayers, player) then
+            continue
+        end
+        table.insert(NoGunsTargetPlayers, player)
+    end
+end
+
+function UnNoGunsPlayers(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+    for _, player in pairs(players) do
+        if table.find(NoGunsTargetPlayers, player) then
+            table.remove(NoGunsTargetPlayers, table.find(NoGunsTargetPlayers, player))
+        end
+    end
+end
+
 Players.PlayerAdded:Connect(PlayerAdded)
 
 vm:CreateCommand({
@@ -481,7 +519,7 @@ vm:CreateCommand({
     }
 })
 
-VM:CreateCommand({
+vm:CreateCommand({
     name = "noguns",
     callback = NoGunsPlayers,
     args = {
@@ -491,7 +529,7 @@ VM:CreateCommand({
     }
 })
 
-VM:CreateCommand({
+vm:CreateCommand({
     name = "unnoguns",
     callback = UnNoGunsPlayers,
     args = {
@@ -501,25 +539,35 @@ VM:CreateCommand({
     }
 })
 
-VM:CreateCommand({
+vm:CreateCommand({
     name = "inmates",
     callback = function()
         return Inmates
     end
 })
-
-VM:CreateCommand({
+vm:CreateCommand({
     name = "guards",
     callback = function()
         return Guards
     end
 })
 
-VM:CreateCommand({
+vm:CreateCommand({
     name = "criminals",
     callback = function()
         return Criminals
     end
+})
+
+vm:CreateCommand({
+    name = "team",
+    callback = function(newTeam)
+    end,
+    args = {
+        {
+            name = "newTeam"
+        }
+    }
 })
 
 Player.Chatted:Connect(function(msg)
