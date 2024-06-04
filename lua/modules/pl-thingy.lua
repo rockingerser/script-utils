@@ -33,7 +33,7 @@ local Spoofs = {}
 local SpoofsNames = {}
 local KillingPlayers = {}
 local PendingNuke = {}
-local OneshotPlayers = {}
+local OneshotTargetPlayers = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
@@ -139,12 +139,15 @@ function CharacterAdded(NewCharacter)
         end
     end)
 
+    local HealthChanged = nil
+    HealthChanged = Humanoid.HealthChanged:Connect(function()
+        if player.Team == Inmates or table.find(OneshotTargetPlayers, player) then
+            HealthChanged:Disconnect()
+            KillPlayers(player)
+        end
+    end)
+
     if player ~= Player then
-        Humanoid.HealthChanged:Connect(function()
-            if table.find(OneshotPlayers, player) then
-                KillPlayers(player)
-            end
-        end)
         return
     end
 
@@ -410,7 +413,30 @@ function AddNuke(players)
 end
 
 function OneshotPlayers(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+    for _, player in pairs(players) do
+        if table.find(OneshotTargetPlayers, player) then
+            continue
+        end
+        table.insert(OneshotTargetPlayers, player)
+    end
+end
 
+function UnoneshotPlayers(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+    for _, player in pairs(players) do
+        if table.find(OneshotTargetPlayers, player) then
+            table.remove(OneshotTargetPlayers, table.find(OneshotTargetPlayers, player))
+        end
+    end
 end
 
 Players.PlayerAdded:Connect(PlayerAdded)
@@ -433,6 +459,67 @@ vm:CreateCommand({
             name = "players"
         }
     }
+})
+
+vm:CreateCommand({
+    name = "oneshot",
+    callback = OneshotPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "unoneshot",
+    callback = UnoneshotPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+VM:CreateCommand({
+    name = "noguns",
+    callback = NoGunsPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+VM:CreateCommand({
+    name = "unnoguns",
+    callback = UnNoGunsPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+VM:CreateCommand({
+    name = "inmates",
+    callback = function()
+        return Inmates
+    end
+})
+
+VM:CreateCommand({
+    name = "guards",
+    callback = function()
+        return Guards
+    end
+})
+
+VM:CreateCommand({
+    name = "criminals",
+    callback = function()
+        return Criminals
+    end
 })
 
 Player.Chatted:Connect(function(msg)

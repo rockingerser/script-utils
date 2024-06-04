@@ -54,7 +54,7 @@ return (function(VM)
         end,
         level = 3,
         description = "Returns a table containing all the players in the game but you",
-        returns = "player[]"
+        returns = "Player[]"
     })
     VM:CreateCommand({
         name = "all",
@@ -63,6 +63,16 @@ return (function(VM)
         end,
         level = 3,
         description = "Returns a table containing all the players in the game",
-        returns = "player[]"
+        returns = "Player[]"
+    })
+    VM:CreateCommand({
+        name = "allinteam",
+        callback = function(arg)
+        end,
+        args = {
+            {
+                name = "team"
+            }
+        }
     })
 end)
