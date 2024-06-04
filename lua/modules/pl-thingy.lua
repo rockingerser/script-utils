@@ -19,6 +19,9 @@ local TeamEvent = Remote.TeamEvent
 local ItemHandler = Remote.ItemHandler
 local ShootEvent = ReplicatedStorage.ShootEvent
 local ReloadEvent = ReplicatedStorage.ReloadEvent
+local MeleeEvent = ReplicatedStorage.meleeEvent
+local ChatEvent = ReplicatedStorage.DefaultChatSystemChatEvents
+local SayMessage = ChatEvent.SayMessageRequest
 local Guards = Teams.Guards
 local Inmates = Teams.Inmates
 local Neutral = Teams.Neutral
@@ -28,10 +31,16 @@ local RandGen = Random.new()
 local SpoofsOrder = {}
 local Spoofs = {}
 local SpoofsNames = {}
+local KillingPlayers = {}
+local PendingNuke = {}
+local OneshotPlayers = {}
+local LocalCharacter = nil
+local LocalHumanoid = nil
+local LocalRoot = nil
 local Secret =  HttpService:GenerateGUID()
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
-AdminScreenGui.ZIndex = -1
+--dminScreenGui.ZIndex = -1
 
 SpoofIndicatorPart.Name = HttpService:GenerateGUID(false)
 SpoofIndicatorPart.Anchored = true
@@ -39,13 +48,32 @@ SpoofIndicatorPart.Size = Vector3.new(2, 2, 1)
 SpoofIndicatorPart.CanCollide = false
 SpoofIndicatorPart.Transparency = 1
 
+SpoofIndicatorPartOutline.Adornee = SpoofIndicatorPart
+SpoofIndicatorPartOutline.Parent = SpoofIndicatorPart
+SpoofIndicatorPart.Parent = workspace
 
-local function WaitFirst(...)
+-- Import some admin modules
+local CommandVM = loadstring(game:HttpGet("https://pastebin.com/raw/27Lnax7E"), true)()
+local Parser = loadstring(game:HttpGet("https://pastebin.com/raw/t7RunsQs"), true)()
+-- HTTP 429 Prevention
+task.wait(6)
+
+local vm = CommandVM.new()
+local parser = Parser.new(vm)
+
+-- Import basic commands
+loadstring(game:HttpGet("https://pastebin.com/raw/V1e3Zsub"), true)()(vm)
+
+function Chat(msg, channel)
+    SayMessage:FireServer(msg, channel or "All")
+end
+
+function WaitFirst(...)
     local Event = Instance.new("BindableEvent")
     local Events = {}
 
     for _, event in ipairs({...}) do
-        table.insert(Events, event)
+        table.insert(Events,
         event:Connect(function(...)
             for _, EventTarget in ipairs(Events) do
                 EventTarget:Disconnect()
@@ -53,15 +81,15 @@ local function WaitFirst(...)
 
             Event:Fire(event, ...)
             Event:Destroy()
-        end)
+        end))
     end
 
     return Event.Event:Wait()
 end
 
-local function SpoofPosition(Name, Priority, Value)
+function SpoofPosition(Name, Priority, Value)
     if SpoofsNames[Name] ~= nil then
-        SpoofsNames[Names].value = Value
+        SpoofsNames[Name].value = Value
         return
     end
 
@@ -85,7 +113,7 @@ local function SpoofPosition(Name, Priority, Value)
     SpoofsNames[Name] = SpoofData
 end
 
-local function UnspoofPosition(Name)
+function UnspoofPosition(Name)
     if SpoofsNames[Name] == nil then
         return
     end
@@ -98,23 +126,31 @@ local function UnspoofPosition(Name)
     SpoofsNames[Name] = nil
 end
 
-local function CharacterAdded(NewCharacter)
+function CharacterAdded(NewCharacter)
     local player = Players:GetPlayerFromCharacter(NewCharacter)
     local Humanoid = NewCharacter:WaitForChild("Humanoid")
     local Root = NewCharacter:WaitForChild("HumanoidRootPart")
     local SpoofsOldCFrame
 
+    Humanoid.Died:Once(function()
+        if table.find(PendingNuke, player) then
+            table.remove(PendingNuke, table.find(PendingNuke, player))
+            KillPlayers(Players:GetPlayers())
+        end
+    end)
+
     if player ~= Player then
-        local HealthChanged = nil
-        HealthChanged = Humanoid.HealthChanged:Connect(function()
-            if player.Team == Inmates then
-                HealthChanged:Disconnect()
-                GunKillPlayers(player)
+        Humanoid.HealthChanged:Connect(function()
+            if table.find(OneshotPlayers, player) then
+                KillPlayers(player)
             end
         end)
-        
         return
     end
+
+    LocalCharacter = NewCharacter
+    LocalHumanoid = Humanoid
+    LocalRoot = Root
 
     local SpoofServer = RunService.PostSimulation:Connect(function()
         local SpoofsCurrent = Spoofs[1]
@@ -122,7 +158,7 @@ local function CharacterAdded(NewCharacter)
         if SpoofsCurrent then
             SpoofsOldCFrame = Root.CFrame
             SpoofIndicatorPartOutline.Transparency = 0
-            SpoofIndicatorPartOutline.Color = Color3.fromHSV(os.clock() * .3 % 1, 1, 1)
+            SpoofIndicatorPartOutline.Color3 = Color3.fromHSV(os.clock() * .3 % 1, 1, 1)
             SpoofIndicatorPart.CFrame = SpoofsCurrent.value
             Root.CFrame = SpoofsCurrent.value
         end
@@ -143,14 +179,14 @@ local function CharacterAdded(NewCharacter)
     end)()
 end
 
-local function PlayerAdded(NewPlayer)
+function PlayerAdded(NewPlayer)
     NewPlayer.CharacterAdded:Connect(CharacterAdded)
     if NewPlayer.Character then
         CharacterAdded(NewPlayer.Character)
     end
 end
 
-local function GetCharacter(Wait, TargetPlayer)
+function GetCharacter(Wait, TargetPlayer)
     TargetPlayer = TargetPlayer or Player
     if not TargetPlayer.Character and Wait then
         return Player.CharacterAdded:Wait()
@@ -158,7 +194,7 @@ local function GetCharacter(Wait, TargetPlayer)
     return TargetPlayer.Character
 end
 
-local function GetCharLimb(Name, Wait, TargetPlayer)
+function GetCharLimb(Name, Wait, TargetPlayer)
     TargetPlayer = TargetPlayer or Player
     if Wait then
         while GetCharacter(false, TargetPlayer) == nil or GetCharacter(false, TargetPlayer):FindFirstChild(Name) == nil do
@@ -174,7 +210,7 @@ local function GetCharLimb(Name, Wait, TargetPlayer)
     return Char:FindFirstChild(Name)
 end
 
-local function GetToolInBackpack(ToolName)
+function GetToolInBackpack(ToolName)
     local Character = GetCharacter()
     if Character and Character:FindFirstChild(ToolName) then
         return Character[ToolName]
@@ -182,7 +218,7 @@ local function GetToolInBackpack(ToolName)
     return Player.Backpack:FindFirstChild(ToolName)
 end
 
-local function SwitchToTeam(Team, Yield)
+function SwitchToTeam(Team, Yield)
     if Team == Criminals then
         local From = GetCharLimb("Head", true)
 
@@ -217,7 +253,7 @@ local function SwitchToTeam(Team, Yield)
     end
 end
 
-local function KillMyself()
+function KillMyself()
     local Humanoid = GetCharLimb("Humanoid")
     if Humanoid == nil then
         return
@@ -225,7 +261,7 @@ local function KillMyself()
     Humanoid:ChangeState(Enum.HumanoidStateType.Dead)
 end
 
-local function GetItem(ItemName)
+function GetItem(ItemName)
     local Item = workspace.Prison_ITEMS.giver[ItemName].ITEMPICKUP
     local Character = GetCharacter()
 
@@ -242,23 +278,28 @@ local function GetItem(ItemName)
         return
     end
 
+    SpoofPosition("getitemtask", 3000, Item.CFrame)
     while Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
-        Root.CFrame = Item.CFrame
         ItemHandler:InvokeServer(Item)
     end
+    UnspoofPosition("getitemtask")
 end
 
-local function GunKillPlayers(players)
-    if Player.Team ~= Criminals then
+function GunKillPlayers(players, taser)
+    --[[if Player.Team ~= Criminals then
         SwitchToTeam(Criminals, true)
-    end
+    end]]
 
     local Gun
     local Shoots = {}
 
-    while GetToolInBackpack("M9") == nil do
-        GetItem("M9")
-    end
+    --[[if taser then
+
+    else]]
+        while GetToolInBackpack("M9") == nil do
+            GetItem("M9")
+        end
+    --end
     Gun = GetToolInBackpack("M9")
 
     for _, player in ipairs(players) do
@@ -285,7 +326,120 @@ local function GunKillPlayers(players)
     ReloadEvent:FireServer(Gun)
 end
 
+function TpKillPlayers(players)
+    if #KillingPlayers == 0 then
+        for _, player in ipairs(players) do
+            table.insert(KillingPlayers, player)
+        end
+        
+        repeat
+            local TargetPlayer = table.remove(KillingPlayers, 1)
+            print(TargetPlayer)
+            local TargetCharacter = TargetPlayer.Character
+
+            if TargetCharacter == nil then
+                continue
+            end
+            local TargetHumanoid = TargetCharacter:FindFirstChild("Humanoid")
+            local TargetRoot = TargetCharacter:FindFirstChild("HumanoidRootPart")
+            if TargetHumanoid == nil or TargetRoot == nil then
+                continue
+            end
+
+            while TargetCharacter.Parent == workspace and TargetRoot:IsDescendantOf(workspace) and TargetHumanoid:GetState() ~= Enum.HumanoidStateType.Dead do
+                SpoofPosition("tpkilltask", 102, TargetRoot.CFrame)
+                for i = 0, 9 do
+                    MeleeEvent:FireServer(TargetPlayer)
+                end
+                RunService.PostSimulation:Wait()
+            end
+        until #KillingPlayers == 0
+        UnspoofPosition("tpkilltask")
+        return
+    end
+    for _, player in ipairs(players) do
+        table.insert(KillingPlayers, players)
+    end
+end
+
+function KillPlayers(players)
+    local ArraySameTeamPlayers = {}
+    local ArrayOtherTeamPlayers = {}
+    local ShouldKillMyself = false
+
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+
+    for _, player in pairs(players) do
+        if player == Player then
+            ShouldKillMyself = true
+            continue
+        end
+        if player.Team == Neutral then
+            continue
+        end
+        table.insert(if player.Team == Player.Team then ArraySameTeamPlayers else ArrayOtherTeamPlayers, player)
+    end
+
+    if #ArraySameTeamPlayers > 0 then
+        TpKillPlayers(ArraySameTeamPlayers)
+    end
+    if #ArrayOtherTeamPlayers > 0 then
+        GunKillPlayers(ArrayOtherTeamPlayers)
+    end
+    if ShouldKillMyself then
+        LocalHumanoid:ChangeState(Enum.HumanoidStateType.Dead)
+    end
+end
+
+function AddNuke(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
+    end
+    for _, player in pairs(players) do
+        table.insert(PendingNuke, player)
+    end
+end
+
+function OneshotPlayers(players)
+    
+end
+
 Players.PlayerAdded:Connect(PlayerAdded)
+
+vm:CreateCommand({
+    name = "kill",
+    callback = KillPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "nuke",
+    callback = AddNuke,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+Player.Chatted:Connect(function(msg)
+    if msg:sub(1, 1) == parser.CmdPrefix then
+        local ok, code = pcall(parser.ParseString, parser, msg)
+        if ok then
+            vm:Execute(code)
+        end
+    end
+end)
 
 for _, player in ipairs(Players:GetPlayers()) do
     PlayerAdded(player)
