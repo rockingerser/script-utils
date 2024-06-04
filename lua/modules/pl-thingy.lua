@@ -402,12 +402,15 @@ function AddNuke(players)
         }
     end
     for _, player in pairs(players) do
+        if table.find(PendingNuke, player) then
+            continue
+        end
         table.insert(PendingNuke, player)
     end
 end
 
 function OneshotPlayers(players)
-    
+
 end
 
 Players.PlayerAdded:Connect(PlayerAdded)
