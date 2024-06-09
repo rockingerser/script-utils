@@ -20,6 +20,7 @@ local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
 local Remote = workspace.Remote
 local Player = Players.LocalPlayer
 local TeamEvent = Remote.TeamEvent
+local GotArrested = Remote.arrestPlayer
 local ItemHandler = Remote.ItemHandler
 local ShootEvent = ReplicatedStorage.ShootEvent
 local ReloadEvent = ReplicatedStorage.ReloadEvent
@@ -43,13 +44,38 @@ local LoopKillingPlayers = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
+local AntikillEnabled = false
+local AntiarrestEnabled = false
 local Secret =  HttpService:GenerateGUID()
 local NeonTxtIns = nil
 local TargetBillboardTextPlayer = nil
+local BiggestNumber = 1.7976931348623157e308
+local PistolName = "M9"
+local TaserName = "Taser"
+local ShotgunName = "Remington 870"
+local AkName = "AK-47"
+local KnifeName = "Crude knife"
+local HammerName = "Hammer"
+local DefaultState = {
+    pistol = false,
+    --taser = false,
+    shotgun = false,
+    ak = false,
+    knife = false,
+    hammer = false,
+    keycard = false,
+    otherGunThatBehavesLikeTheAk = false, -- Funny name. Is actually  the M4A1
+    equippedTool = nil,
+    cframe = nil,
+    team = Inmates
+}
+local CurrentState = DefaultState
+
 
 coroutine.wrap(function()
     task.wait(12)
-    NeonTxtIns = loadstring(game:HttpGet("https://pastebin.com/raw/ra0fj8pP"))()()
+    NeonTxtIns = loadstring(game:HttpGet("https://pastebin.com/raw/ra0fj8pP"))().new()
+    NeonTxtIns.TextSize = 1.5
 end)()
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
@@ -126,6 +152,79 @@ function WaitFirst(...)
     return Event.Event:Wait()
 end
 
+function SaveState()
+    CurrentState = {
+        pistol = Player.Team ~= Guards and GetToolInBackpack(PistolName) ~= nil,
+        shotgun = GetToolInBackpack(ShotgunName) ~= nil,
+        ak = GetToolInBackpack(AkName) ~= nil,
+        knife = GetToolInBackpack(KnifeName) ~= nil,
+        hammer = GetToolInBackpack(HammerName) ~= nil,
+        keycard = false,
+        otherGunThatBehavesLikeTheAk = false,
+        equippedTool = LocalCharacter:FindFirstChildOfClass("Tool"),
+        team = Player.Team
+    }
+
+    if LocalRoot.Position.Y > workspace.FallenPartsDestroyHeight then
+        CurrentState.cframe = LocalRoot.CFrame
+    end
+    
+    return CurrentState
+end
+
+function RestoreState(NoRespawn)
+    if CurrentState.team == Neutral or Player.Team == Neutral then
+        return
+    end
+
+    if CurrentState.team == Criminals and not NoRespawn then
+        local ShouldSwitchToGuards = #Guards:GetPlayers() < 8
+        if ShouldSwitchToGuards then
+            SwitchToTeam(Guards, true)
+        end
+        if Player.Team ~= Guards or not ShouldSwitchToGuards then
+            SwitchToTeam(Inmates, true)
+            --print("pe")
+        end
+    end
+
+    if not NoRespawn then
+        SwitchToTeam(CurrentState.team, CurrentState.team ~= Criminals or Player.Team ~= Inmates)
+    end
+    print(CurrentState.team)
+
+    if CurrentState.pistol then
+        coroutine.wrap(GetItem)(PistolName)
+    end
+    if CurrentState.shotgun then
+        GetItem(ShotgunName)
+    end
+    if CurrentState.ak then
+        GetItem(AkName)
+    end
+    if CurrentState.knife then
+        GetItem(KnifeName)
+    end
+    if CurrentState.hammer then
+        GetItem(HammerName)
+    end
+
+    Player.Character:WaitForChild("Humanoid"):ChangeState(Enum.HumanoidStateType.GettingUp)
+
+    if CurrentState.cframe then
+        local cframe = CurrentState.cframe
+        local Root = Player.Character:WaitForChild("HumanoidRootPart")
+        LocalRoot = Root
+        local OldTime = os.clock()
+        while os.clock() - OldTime < .18 do
+            if (Root.Position - cframe.Position).Magnitude > 15 then
+                Root.CFrame = cframe
+            end
+            RunService.PreSimulation:Wait()
+        end
+    end
+end
+
 function SpoofPosition(Name, Priority, Value)
     if SpoofsNames[Name] ~= nil then
         SpoofsNames[Name].value = Value
@@ -169,12 +268,19 @@ function CharacterAdded(NewCharacter)
     local player = Players:GetPlayerFromCharacter(NewCharacter)
     local Humanoid = NewCharacter:WaitForChild("Humanoid")
     local Root = NewCharacter:WaitForChild("HumanoidRootPart")
+    local Head = NewCharacter:WaitForChild("Head")
     local SpoofsOldCFrame
+    local Arrested = false
 
     Humanoid.Died:Once(function()
         if table.find(PendingNuke, player) then
             table.remove(PendingNuke, table.find(PendingNuke, player))
             KillPlayers(Players:GetPlayers())
+        end
+        if player == Player and AntikillEnabled and not Arrested then
+            print(Player.Team)
+            SaveState()
+            RestoreState()
         end
     end)
 
@@ -216,6 +322,25 @@ function CharacterAdded(NewCharacter)
         if SpoofsOldCFrame then
             Root.CFrame = SpoofsOldCFrame
             SpoofsOldCFrame = nil
+        end
+    end)
+
+    --[[Player.CharacterRemoving:Once(function()
+        if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and Head:FindFirstChild("handcuffedGui") == nil then
+            SaveState()
+        end
+        if AntiarrestEnabled then
+            RestoreState()
+        end
+    end)]]
+
+    GotArrested.OnClientEvent:Once(function()
+        if AntiarrestEnabled then
+            Arrested = true
+            --SaveState()
+            Humanoid:ChangeState(Enum.HumanoidStateType.Dead)
+            --Player.CharacterAdded:Wait()
+            --RestoreState()
         end
     end)
 
@@ -268,13 +393,26 @@ end
 
 function SwitchToTeam(Team, Yield)
     if Team == Criminals then
-        local From = GetCharLimb("Head", true)
+        local Step = RunService.PostSimulation:Connect(function()
+            local Head = LocalCharacter:FindFirstChild("Head")
+            if Head and LocalCharacter.Parent == workspace then
+                firetouchinterest(Head, CriminalSpawn, 0)
+                firetouchinterest(Head, CriminalSpawn, 1)
+            end
+        end)
 
-        firetouchinterest(From, CriminalSpawn, 0)
-        firetouchinterest(From, CriminalSpawn, 1)
         if Yield then
-            Player:GetPropertyChangedSignal("Team"):Wait()
+            if Player.Team == Inmates then
+                Player:GetPropertyChangedSignal("TeamColor"):Wait()
+            else
+                Player.CharacterAdded:Wait()
+            end
+        else
+            RunService.PostSimulation:Wait()
         end
+
+        Step:Disconnect()
+
         return
     end
 
@@ -282,16 +420,28 @@ function SwitchToTeam(Team, Yield)
         return
     end
 
-    TeamEvent:FireServer(Team.Color.Name)
+    TeamEvent:FireServer(Team.TeamColor.Name)
     if Yield then
-        if Team == Guards and #Guards:GetPlayers() < 8 then
+        if Team == Guards and Player.Team ~= Team and #Guards:GetPlayers() < 8 then
             local Event = Instance.new("BindableEvent")
-            local TeamPlAdded = nil
+            local TeamPlAdded, CharAdded  = nil, nil
+
+
             TeamPlAdded = Guards.PlayerAdded:Connect(function(player)
-                if player == Player or #Guards:GetPlayers() == 8 then
+                if player == Player then
+                    return TeamPlAdded:Disconnect()
+                end
+                if #Guards:GetPlayers() == 8 then
                     Event:Fire()
                     TeamPlAdded:Disconnect()
+                    CharAdded:Disconnect()
                 end
+            end)
+
+            CharAdded = Player.CharacterAdded:Connect(function()
+                Event:Fire()
+                TeamPlAdded:Disconnect()
+                CharAdded:Disconnect()
             end)
 
             Event.Event:Wait()
@@ -299,8 +449,8 @@ function SwitchToTeam(Team, Yield)
             return
         end
 
-        if Team ~= Guards then
-            Player:GetPropertyChangedSignal("Team"):Wait()
+        if Team ~= Guards or Player.Team == Team then
+            Player.CharacterAdded:Wait()
         end
     end
 end
@@ -330,11 +480,11 @@ function GetItem(ItemName)
         return
     end
 
-    SpoofPosition("getitemtask", 3000, Item.CFrame)
+    SpoofPosition("getitemtask"..ItemName, 3000, Item.CFrame)
     while Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
         ItemHandler:InvokeServer(Item)
     end
-    UnspoofPosition("getitemtask")
+    UnspoofPosition("getitemtask"..ItemName)
 end
 
 function GunKillPlayers(players, taser)
@@ -399,7 +549,7 @@ function TpKillPlayers(players)
             end
 
             while TargetCharacter.Parent == workspace and TargetRoot:IsDescendantOf(workspace) and TargetHumanoid:GetState() ~= Enum.HumanoidStateType.Dead do
-                SpoofPosition("tpkilltask", 102, TargetRoot.CFrame)
+                SpoofPosition("tpkilltask", 300, TargetRoot.CFrame)
                 for i = 0, 9 do
                     MeleeEvent:FireServer(TargetPlayer)
                 end
@@ -447,17 +597,39 @@ function KillPlayers(players)
     end
 end
 
-function AddNuke(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
+function Insert(Table, playersOrT)
+    if typeof(playersOrT) ~= "table" then
+        playersOrT = {
+            [1] = playersOrT
         }
     end
-    for _, player in pairs(players) do
-        if table.find(PendingNuke, player) then
+
+    local ProcessedPlayers = {}
+
+    if typeof(Table.Players) ~= "table" then
+        Table.Players = {}
+    end
+
+    if typeof(Table.Teams) ~= "table" then
+        Table.Teams = {}
+    end
+
+    for _, playerOrT in pairs(playersOrT) do
+        if typeof(playerOrT) ~= "Instance" then
             continue
         end
-        table.insert(PendingNuke, player)
+        if playerOrT:IsA("Player") and table.find(Table.Players, playerOrT) == nil then
+            table.insert(Table.Players, playerOrT)
+            table.insert(ProcessedPlayers, playerOrT)
+        elseif playerOrT:IsA("Team") and table.find(Table.Teams, playerOrT) == nil then
+            table.insert(Table.Teams, playerOrT)
+            for _, player in ipairs(playerOrT:GetPlayers()) do
+                if table.find(ProcessedPlayers, player) then
+                    continue
+                end
+                table.insert(ProcessedPlayers, player)
+            end
+        end
     end
 end
 
@@ -535,25 +707,74 @@ function BillboardTextPlayer(player, text)
     end
     
     TargetBillboardTextPlayer = player
-    if NeonTxtIns.Text == "" then
-        NeonTxtIns.Text = text
-        repeat
+    NeonTxtIns.Text = text
+end
+
+coroutine.wrap(function()
+        while true do
             RunService.PostSimulation:Wait()
+            if typeof(TargetBillboardTextPlayer) ~= "Instance" or not TargetBillboardTextPlayer:IsA("Player") then
+                continue
+            end
+            if GetToolInBackpack(PistolName) == nil then
+                GetItem(PistolName)
+            end
             local TargetCharacter = TargetBillboardTextPlayer.Character
             if TargetCharacter == nil then
                 continue
             end
-            local TargetHead = TargetBillboardTextPlayer:FindFirstChild("Head")
+            local TargetHead = TargetCharacter:FindFirstChild("Head")
             if TargetHead == nil then
                 continue
             end
-            NeonTxtIns.CFrame = TargetHead.CFrame
-            NeonTxtIns:Render()
+            NeonTxtIns.CFrame = TargetHead.CFrame * CFrame.new(0, 3, 0)
+            pcall(NeonTxtIns.Render, NeonTxtIns)
             NeonTxtIns:Draw()
             task.wait(.6)
-        until NeonTxtIns.Text == nil
+        end
+end)()
+
+function UnLoopkillPlayers(players)
+    if typeof(players) ~= "table" then
+        players = {
+            [1] = players
+        }
     end
-    NeonTxtIns.Text = text
+    for _, player in pairs(players) do
+        if table.find(LoopKillingPlayers, player) then
+            table.remove(LoopKillingPlayers, table.find(LoopKillingPlayers, player))
+        end
+    end
+end
+
+function Invisible()
+    SpoofPosition("i'm invisible", 99, CFrame.new(BiggestNumber, BiggestNumber, BiggestNumber))
+end
+
+function Visible()
+    UnspoofPosition("i'm invisible")
+end
+
+function Antikill()
+    AntikillEnabled = true
+end
+
+function Unantikill()
+    AntikillEnabled = false
+end
+
+function Antiarrest()
+    AntiarrestEnabled = true
+end
+
+function Unantiarrest()
+    AntiarrestEnabled = false
+end
+
+function Team(Team)
+    SaveState()
+    SwitchToTeam(Team, true)
+    RestoreState(true)
 end
 
 Players.PlayerAdded:Connect(PlayerAdded)
@@ -640,7 +861,7 @@ vm:CreateCommand({
 
 vm:CreateCommand({
     name = "team",
-    callback = SwitchToTeam,
+    callback = Team,
     args = {
         {
             name = "newTeam"
@@ -649,7 +870,7 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-    name = "name",
+    name = "billtext",
     callback = BillboardTextPlayer,
     args = {
         {
@@ -659,6 +880,56 @@ vm:CreateCommand({
             name = "text"
         }
     }
+})
+
+vm:CreateCommand({
+    name = "loopkill",
+    callback = LoopkillPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "unloopkill",
+    callback = UnLoopkillPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "invisible",
+    callback = Invisible
+})
+
+vm:CreateCommand({
+    name = "visible",
+    callback = Visible
+})
+
+vm:CreateCommand({
+    name = "antikill",
+    callback = Antikill
+})
+
+vm:CreateCommand({
+    name = "unantikill",
+    callback = Unantikill
+})
+
+vm:CreateCommand({
+    name = "antiarrest",
+    callback = Antiarrest
+})
+
+vm:CreateCommand({
+    name = "unantiarrest",
+    callback = Unantiarrest
 })
 
 Player.Chatted:Connect(function(msg)
@@ -675,7 +946,7 @@ AdminCmdBox.FocusLost:Connect(function(EnterPressed)
         return
     end
 
-    local ok, code = pcall(parser.ParseString, parse,
+    local ok, code = pcall(parser.ParseString, parser,
         if AdminCmdBox.Text:sub(1, 1) == parser.CmdPrefix then
             AdminCmdBox.Text
         else 
@@ -689,6 +960,12 @@ AdminCmdBox.FocusLost:Connect(function(EnterPressed)
 end)
 
 AdminScreenGui.Parent = CoreGui
+
+coroutine.wrap(function()
+    while task.wait(1.5) do
+        KillPlayers(LoopKillingPlayers)
+    end
+end)()
 
 for _, player in ipairs(Players:GetPlayers()) do
     PlayerAdded(player)

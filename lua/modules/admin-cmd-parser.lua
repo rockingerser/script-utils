@@ -160,13 +160,13 @@ function Parser:ParseArgs(forCommand)
     local parsedArgs = {}
     local numParsedArgs = 0
 
-    for _, arg in ipairs(args) do
+    while true do
         while self.script:sub(self.i, self.i):find("%s") do
             self.i += 1
         end
 
         if self.i > #self.script or self.script:sub(self.i, self.i) == self.CmdPrefix then
-            self.error(string.format("error: Command %q takes %d arguments. Got %d", forCommand.name, #args, numParsedArgs), self.i)
+            break
         end
 
         table.insert(parsedArgs, self:ParseArg())

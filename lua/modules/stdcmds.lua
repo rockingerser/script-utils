@@ -15,8 +15,7 @@ return (function(VM)
                 description = "The data to print."
             }
         },
-        description = "Prints data to the console",
-        returns = "nil"
+        description = "Prints data to the console"
     })
     VM:CreateCommand({
         name = "true",
@@ -24,8 +23,7 @@ return (function(VM)
             return true
         end,
         level = 0,
-        description = "Returns true",
-        returns = "boolean"
+        description = "Returns true"
     })
     VM:CreateCommand({
         name = "false",
@@ -33,8 +31,7 @@ return (function(VM)
             return false
         end,
         level = 0,
-        description = "Returns false",
-        returns = "boolean"
+        description = "Returns false"
     })
     VM:CreateCommand({
         name = "nil",
@@ -42,8 +39,7 @@ return (function(VM)
             return nil
         end,
         level = 0,
-        description = "Returns nil",
-        returns = "nil"
+        description = "Returns nil"
     })
     VM:CreateCommand({
         name = "others",
@@ -53,8 +49,7 @@ return (function(VM)
             return players
         end,
         level = 3,
-        description = "Returns a table containing all the players in the game but you",
-        returns = "Player[]"
+        description = "Returns a table containing all the players in the game but you"
     })
     VM:CreateCommand({
         name = "all",
@@ -63,16 +58,13 @@ return (function(VM)
         end,
         level = 3,
         description = "Returns a table containing all the players in the game",
-        returns = "Player[]"
     })
     VM:CreateCommand({
-        name = "allinteam",
-        callback = function(arg)
+        name = "me",
+        callback = function()
+            return Player
         end,
-        args = {
-            {
-                name = "team"
-            }
-        }
+        level = 0,
+        description = "Returns a player (yourself)"
     })
 end)
