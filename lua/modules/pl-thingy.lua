@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HttpService = game:GetService("HttpService")
 local Teams = game:GetService("Teams")
 local CoreGui = game:GetService("CoreGui")
+local UserInputService = game:GetService("UserInputService")
 local AdminScreenGui = Instance.new("ScreenGui")
 local AdminCmdBox = Instance.new("TextBox")
 local AdminRoundCorners = Instance.new("UICorner")
@@ -18,6 +19,8 @@ local AdminPadding = Instance.new("UIPadding")
 local SpoofIndicatorPart = Instance.new("Part")
 local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
 local Remote = workspace.Remote
+local PrisonItems = workspace.Prison_ITEMS
+local CarContainer = workspace.CarContainer
 local Player = Players.LocalPlayer
 local TeamEvent = Remote.TeamEvent
 local GotArrested = Remote.arrestPlayer
@@ -36,26 +39,42 @@ local RandGen = Random.new()
 local SpoofsOrder = {}
 local Spoofs = {}
 local SpoofsNames = {}
+local TargetList = {
+    Killing = {},
+    PendingNuke = {},
+    Oneshot = {},
+    NoGuns = {},
+    LoopKilling = {}
+}
 local KillingPlayers = {}
-local PendingNuke = {}
-local OneshotTargetPlayers = {}
-local NoGunsTargetPlayers = {}
-local LoopKillingPlayers = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
 local AntikillEnabled = false
 local AntiarrestEnabled = false
+local InfiniteJumpEnabled = false
+local SpamEnabled = false
+local RestoringState = false
+local InfiniteYieldLoaded = false
+local DexLoaded = false
 local Secret =  HttpService:GenerateGUID()
 local NeonTxtIns = nil
+local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
-local BiggestNumber = 1.7976931348623157e308
+local BiggestNumber = math.huge * math.huge --1.7976931348623157e308
+local InvisiblePriority = 99
+local TpKillPriority = 300
+local GetCarPriority = 2700
+local GetItemPriority = 3000
 local PistolName = "M9"
 local TaserName = "Taser"
 local ShotgunName = "Remington 870"
 local AkName = "AK-47"
-local KnifeName = "Crude knife"
+local KnifeName = "Crude Knife"
 local HammerName = "Hammer"
+local KeyCardName = "Key card"
+local OtherGunThatBehavesLikeTheAkName = "M4A1"
+local CarSpawners = {}
 local DefaultState = {
     pistol = false,
     --taser = false,
@@ -77,6 +96,12 @@ coroutine.wrap(function()
     NeonTxtIns = loadstring(game:HttpGet("https://pastebin.com/raw/ra0fj8pP"))().new()
     NeonTxtIns.TextSize = 1.5
 end)()
+
+for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
+    if Spawner.Name == "Car Spawner" then
+        table.insert(CarSpawners, Spawner["Car Spawner"])
+    end
+end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
 AdminScreenGui.DisplayOrder = -1
@@ -153,6 +178,10 @@ function WaitFirst(...)
 end
 
 function SaveState()
+    if RestoringState then
+        return CurrentState
+    end
+
     CurrentState = {
         pistol = Player.Team ~= Guards and GetToolInBackpack(PistolName) ~= nil,
         shotgun = GetToolInBackpack(ShotgunName) ~= nil,
@@ -177,6 +206,8 @@ function RestoreState(NoRespawn)
         return
     end
 
+    RestoringState = true
+
     if CurrentState.team == Criminals and not NoRespawn then
         local ShouldSwitchToGuards = #Guards:GetPlayers() < 8
         if ShouldSwitchToGuards then
@@ -192,37 +223,40 @@ function RestoreState(NoRespawn)
         SwitchToTeam(CurrentState.team, CurrentState.team ~= Criminals or Player.Team ~= Inmates)
     end
     print(CurrentState.team)
+    
+    local Root = Player.Character:WaitForChild("HumanoidRootPart")
+    LocalRoot = Root
 
     if CurrentState.pistol then
         coroutine.wrap(GetItem)(PistolName)
     end
     if CurrentState.shotgun then
-        GetItem(ShotgunName)
+        coroutine.wrap(GetItem)(ShotgunName)
     end
     if CurrentState.ak then
-        GetItem(AkName)
+        coroutine.wrap(GetItem)(AkName)
     end
     if CurrentState.knife then
-        GetItem(KnifeName)
+        coroutine.wrap(GetItem)(KnifeName)
     end
     if CurrentState.hammer then
-        GetItem(HammerName)
+        coroutine.wrap(GetItem)(HammerName)
     end
 
     Player.Character:WaitForChild("Humanoid"):ChangeState(Enum.HumanoidStateType.GettingUp)
 
     if CurrentState.cframe then
         local cframe = CurrentState.cframe
-        local Root = Player.Character:WaitForChild("HumanoidRootPart")
-        LocalRoot = Root
         local OldTime = os.clock()
-        while os.clock() - OldTime < .18 do
+        repeat
             if (Root.Position - cframe.Position).Magnitude > 15 then
                 Root.CFrame = cframe
             end
             RunService.PreSimulation:Wait()
-        end
+        until os.clock() - OldTime > .21
     end
+
+    RestoringState = false
 end
 
 function SpoofPosition(Name, Priority, Value)
@@ -251,6 +285,84 @@ function SpoofPosition(Name, Priority, Value)
     SpoofsNames[Name] = SpoofData
 end
 
+function TpCar(Car, Cframe)
+    Car:PivotTo(Cframe * LocalRoot.CFrame:Inverse() * Car.WorldPivot)
+end
+
+function SitInCar(CarModel)
+    local Body = CarModel:WaitForChild("Body", 3)
+    if Body == nil then
+        return false
+    end
+    local VehicleSeat = Body:WaitForChild("VehicleSeat", 3)
+    if VehicleSeat == nil then
+        return false
+    end
+
+    while CarModel.Parent == CarContainer and VehicleSeat.Occupant == nil and not VehicleSeat:GetAttribute("Used") do
+        firetouchinterest(LocalRoot, VehicleSeat, 0)
+        firetouchinterest(LocalRoot, VehicleSeat, 1)
+        RunService.PostSimulation:Wait()
+    end
+
+    if VehicleSeat.Occupant == LocalHumanoid then
+        VehicleSeat:SetAttribute("Used", true)
+        return true
+    end
+    return false
+end
+
+function GetCar()
+    if LocalHumanoid:GetState() == Enum.HumanoidStateType.Seated then
+        LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+    end
+
+    local OldCFrame
+
+    for _, Car in ipairs(CarContainer:GetChildren()) do
+        OldCFrame = LocalRoot.CFrame
+        if SitInCar(Car) then
+            TpCar(Car, OldCFrame)
+            task.wait(.18)
+            LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+            return
+        end
+    end
+
+    local CarSpawned, SpawnCarEvent = nil, nil
+    local SpawnCar = Instance.new("BindableEvent")
+
+    CarSpawned = CarContainer.ChildAdded:Connect(function(Car)
+        if SitInCar(Car) then
+            CarSpawned:Disconnect()
+            SpawnCarEvent:Disconnect()
+            TpCar(Car, OldCFrame)
+            task.wait(.18)
+            LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+            return
+        end
+        SpawnCar:Fire()
+    end)
+
+    SpawnCarEvent = SpawnCar.Event:Connect(function()
+        for _, Spawner in ipairs(CarSpawners) do
+            if Spawner.BrickColor.Name == "Cyan" then
+                OldCFrame = LocalRoot.CFrame
+                SpoofPosition("getcartask", GetCarPriority, Spawner.CFrame)
+                repeat
+                    if LocalHumanoid:GetState() == Enum.HumanoidStateType.Seated then
+                        LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+                    end
+                    ItemHandler:InvokeServer(Spawner)
+                until Spawner.BrickColor.Name == "Deep blue"
+                return UnspoofPosition("getcartask")
+            end
+        end
+    end)
+
+    SpawnCar:Fire()
+end
+
 function UnspoofPosition(Name)
     if SpoofsNames[Name] == nil then
         return
@@ -264,6 +376,23 @@ function UnspoofPosition(Name)
     SpoofsNames[Name] = nil
 end
 
+function HasLethalTools(player)
+    local Tools = { player.Character:FindFirstChildOfClass("Tool") }
+
+    for _, Tool in ipairs(player.Backpack:GetChildren()) do
+        table.insert(Tools, Tool)
+    end
+
+    for _, Lethal in ipairs(Tools) do
+        print(Lethal)
+        if Lethal.Name == PistolName or Lethal.Name == ShotgunName or Lethal.Name == AkName or Lethal.Name == OtherGunThatBehavesLikeTheAkName or Lethal.Name == KnifeName or Lethal.Name == HammerName then
+            return true
+        end
+    end
+
+    return false
+end
+
 function CharacterAdded(NewCharacter)
     local player = Players:GetPlayerFromCharacter(NewCharacter)
     local Humanoid = NewCharacter:WaitForChild("Humanoid")
@@ -273,26 +402,27 @@ function CharacterAdded(NewCharacter)
     local Arrested = false
 
     Humanoid.Died:Once(function()
-        if table.find(PendingNuke, player) then
-            table.remove(PendingNuke, table.find(PendingNuke, player))
+        if PassCheck(player, TargetList.PendingNuke) then
             KillPlayers(Players:GetPlayers())
         end
-        if player == Player and AntikillEnabled and not Arrested then
-            print(Player.Team)
+        if player == Player and AntikillEnabled then
             SaveState()
+            if Arrested then
+                player.CharacterAdded:Wait()
+            end
             RestoreState()
         end
     end)
 
     local HealthChanged, NoGunsCheck = nil, nil
     HealthChanged = Humanoid.HealthChanged:Connect(function()
-        if table.find(OneshotTargetPlayers, player) then
+        if PassCheck(player, TargetList.Oneshot) then
             HealthChanged:Disconnect()
             KillPlayers(player)
         end
     end)
     NoGunsCheck = player.Backpack.ChildAdded:Connect(function(Gun)
-        if player.Team ~= Guards and table.find(NoGunsTargetPlayers, player) and Gun:WaitForChild("GunStates", .9) then
+        if player.Team ~= Guards and PassCheck(player, TargetList.NoGuns) and HasLethalTools(player) then
             NoGunsCheck:Disconnect()
             KillPlayers(player)
         end
@@ -383,12 +513,15 @@ function GetCharLimb(Name, Wait, TargetPlayer)
     return Char:FindFirstChild(Name)
 end
 
-function GetToolInBackpack(ToolName)
-    local Character = GetCharacter()
+function GetToolInBackpack(ToolName, player)
+    player = player or Player
+    local Character = player.Character
     if Character and Character:FindFirstChild(ToolName) then
         return Character[ToolName]
     end
-    return Player.Backpack:FindFirstChild(ToolName)
+    if Player:FindFirstChild("Backpack") then
+        return Player.Backpack:FindFirstChild(ToolName)
+    end
 end
 
 function SwitchToTeam(Team, Yield)
@@ -464,7 +597,10 @@ function KillMyself()
 end
 
 function GetItem(ItemName)
-    local Item = workspace.Prison_ITEMS.giver[ItemName].ITEMPICKUP
+    local Item = (
+        PrisonItems.giver:FindFirstChild(ItemName) or
+        PrisonItems.single[ItemName]
+    ).ITEMPICKUP
     local Character = GetCharacter()
 
     if Character == nil then
@@ -480,7 +616,7 @@ function GetItem(ItemName)
         return
     end
 
-    SpoofPosition("getitemtask"..ItemName, 3000, Item.CFrame)
+    SpoofPosition("getitemtask"..ItemName, GetItemPriority, Item.CFrame)
     while Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
         ItemHandler:InvokeServer(Item)
     end
@@ -498,11 +634,11 @@ function GunKillPlayers(players, taser)
     --[[if taser then
 
     else]]
-        while GetToolInBackpack("M9") == nil do
-            GetItem("M9")
+        while GetToolInBackpack(PistolName) == nil do
+            GetItem(PistolName)
         end
     --end
-    Gun = GetToolInBackpack("M9")
+    Gun = GetToolInBackpack(PistolName)
 
     for _, player in ipairs(players) do
         local TargetHumanoid = GetCharLimb("Humanoid", false, player)
@@ -549,7 +685,7 @@ function TpKillPlayers(players)
             end
 
             while TargetCharacter.Parent == workspace and TargetRoot:IsDescendantOf(workspace) and TargetHumanoid:GetState() ~= Enum.HumanoidStateType.Dead do
-                SpoofPosition("tpkilltask", 300, TargetRoot.CFrame)
+                SpoofPosition("tpkilltask", TpKillPriority, TargetRoot.CFrame)
                 for i = 0, 9 do
                     MeleeEvent:FireServer(TargetPlayer)
                 end
@@ -564,18 +700,18 @@ function TpKillPlayers(players)
     end
 end
 
-function KillPlayers(players)
+function KillPlayers(players, IsAList)
     local ArraySameTeamPlayers = {}
     local ArrayOtherTeamPlayers = {}
     local ShouldKillMyself = false
 
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
 
-    for _, player in pairs(players) do
+    players = if IsAList then
+        GetPlayersFromTargetList(players)
+    else
+        Insert({}, players)
+
+    for _, player in ipairs(players) do
         if player == Player then
             ShouldKillMyself = true
             continue
@@ -631,74 +767,101 @@ function Insert(Table, playersOrT)
             end
         end
     end
+
+    return ProcessedPlayers
+end
+
+function Remove(Table, playersOrT)
+    if typeof(playersOrT) ~= "table" then
+        playersOrT = {
+            [1] = playersOrT
+        }
+    end
+
+    local ProcessedPlayers = {}
+
+    if typeof(Table.Players) ~= "table" then
+        Table.Players = {}
+    end
+
+    if typeof(Table.Teams) ~= "table" then
+        Table.Teams = {}
+    end
+
+    for _, playerOrT in pairs(playersOrT) do
+        if typeof(playerOrT) ~= "Instance" then
+            continue
+        end
+        if playerOrT:IsA("Player") and table.find(Table.Players, playerOrT) then
+            table.remove(Table.Players, table.find(Table.Players, playerOrT))
+            table.insert(ProcessedPlayers, playerOrT)
+        elseif playerOrT:IsA("Team") and table.find(Table.Teams, playerOrT) then
+            table.remove(Table.Teams, table.find(Table.Teams, playerOrT))
+            for _, player in ipairs(playerOrT:GetPlayers()) do
+                if table.find(ProcessedPlayers, player) then
+                    continue
+                end
+                table.insert(ProcessedPlayers, player)
+            end
+        end
+    end
+
+    return ProcessedPlayers
+end
+
+function PassCheck(player, Table)
+    if Table.Teams and table.find(Table.Teams, player.Team) or Table.Players and table.find(Table.Players, player) then
+        return true
+    end
+    return false
+end
+
+function GetPlayersFromTargetList(Table)
+    local players = {}
+
+    if Table.Players then
+        for _, player in ipairs(Table.Players) do
+            table.insert(players, player)
+        end
+    end
+
+    if Table.Teams then
+        for _, team in ipairs(Table.Teams) do
+            for _, player in ipairs(team:GetPlayers()) do
+                table.insert(players, player)
+            end
+        end
+    end
+
+    return players
+end
+
+function AddNuke(players)
+    Insert(TargetList.PendingNuke, players)
+end
+
+function RemoveNuke(players)
+    Remove(TargetList.PendingNuke, players)
 end
 
 function OneshotPlayers(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
-    for _, player in pairs(players) do
-        if table.find(OneshotTargetPlayers, player) then
-            continue
-        end
-        table.insert(OneshotTargetPlayers, player)
-    end
+    Insert(TargetList.Oneshot, players)
 end
 
 function UnoneshotPlayers(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
-    for _, player in pairs(players) do
-        if table.find(OneshotTargetPlayers, player) then
-            table.remove(OneshotTargetPlayers, table.find(OneshotTargetPlayers, player))
-        end
-    end
+    Remove(TargetList.Oneshot, players)
 end
 
 function NoGunsPlayers(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
-    for _, player in pairs(players) do
-        if table.find(NoGunsTargetPlayers, player) then
-            continue
-        end
-        table.insert(NoGunsTargetPlayers, player)
-    end
+    Insert(TargetList.NoGuns, players)
 end
 
 function UnNoGunsPlayers(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
-    for _, player in pairs(players) do
-        if table.find(NoGunsTargetPlayers, player) then
-            table.remove(NoGunsTargetPlayers, table.find(NoGunsTargetPlayers, player))
-        end
-    end
+    Remove(TargetList.NoGuns, players)
 end
 
 function LoopkillPlayers(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
-    for _, player in pairs(players) do
-        if table.find(LoopKillingPlayers, player) then
-            continue
-        end
-        table.insert(LoopKillingPlayers, player)
-    end
+    Insert(TargetList.LoopKilling, players)
 end
 
 function BillboardTextPlayer(player, text)
@@ -735,20 +898,11 @@ coroutine.wrap(function()
 end)()
 
 function UnLoopkillPlayers(players)
-    if typeof(players) ~= "table" then
-        players = {
-            [1] = players
-        }
-    end
-    for _, player in pairs(players) do
-        if table.find(LoopKillingPlayers, player) then
-            table.remove(LoopKillingPlayers, table.find(LoopKillingPlayers, player))
-        end
-    end
+    Remove(TargetList.LoopKilling, players)
 end
 
 function Invisible()
-    SpoofPosition("i'm invisible", 99, CFrame.new(BiggestNumber, BiggestNumber, BiggestNumber))
+    SpoofPosition("i'm invisible", InvisiblePriority, CFrame.new(BiggestNumber, BiggestNumber, BiggestNumber))
 end
 
 function Visible()
@@ -777,7 +931,63 @@ function Team(Team)
     RestoreState(true)
 end
 
+function InfJump()
+    InfiniteJumpEnabled = true
+end
+
+function UninfJump()
+    InfiniteJumpEnabled = false
+end
+
+function GotoPlayer(player)
+    if typeof(player) ~= "Instance" or not player:IsA("Player") or GetCharLimb(player, false, "HumanoidRootPart") then
+        return
+    end
+    LocalRoot.CFrame = player.Character.HumanoidRootPart.CFrame
+end
+
+function InfiniteYield()
+    if InfiniteYieldLoaded then
+        return
+    end
+    InfiniteYieldLoaded = true
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"), true)()
+end
+
+function Dex()
+    if DexLoaded then
+        return
+    end
+    DexLoaded = true
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"), true)()
+end
+
+function Spam()
+    if SpamEnabled then
+        return
+    end
+    SpamEnabled = true
+
+    if SpamSentences == nil then
+        SpamSentences = loadstring(game:HttpGet("https://raw.githubusercontent.com/BoneiroTheCat/the-adventure-of-scriptie/main/lua/sentences.lua"), true)()
+    end
+
+    repeat
+        task.wait(.6)
+        SayMessage:FireServer(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], "All")
+    until not SpamEnabled
+end
+
+function Unspam()
+    SpamEnabled = false
+end
+
 Players.PlayerAdded:Connect(PlayerAdded)
+UserInputService.JumpRequest:Connect(function()
+    if InfiniteJumpEnabled then
+        LocalHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+    end
+end)
 
 vm:CreateCommand({
     name = "kill",
@@ -792,6 +1002,16 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "nuke",
     callback = AddNuke,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "removenuke",
+    callback = RemoveNuke,
     args = {
         {
             name = "players"
@@ -932,12 +1152,84 @@ vm:CreateCommand({
     callback = Unantiarrest
 })
 
+vm:CreateCommand({
+    name = "pistol",
+    callback = function()
+        GetItem(PistolName)
+    end
+})
+
+vm:CreateCommand({
+    name = "shotgun",
+    callback = function()
+        GetItem(ShotgunName)
+    end
+})
+
+vm:CreateCommand({
+    name = "ak",
+    callback = function()
+        GetItem(AkName)
+    end
+})
+
+vm:CreateCommand({
+    name = "infjump",
+    callback = InfJump
+})
+
+vm:CreateCommand({
+    name = "uninfjump",
+    callback = UninfJump
+})
+
+vm:CreateCommand({
+    name = "car",
+    callback = GetCar
+})
+
+vm:CreateCommand({
+    name = "goto",
+    callback = GotoPlayer,
+    args = {
+        {
+            name = "player"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "iy",
+    callback = InfiniteYield
+})
+
+vm:CreateCommand({
+    name = "dex",
+    callback = Dex
+})
+
+vm:CreateCommand({
+    name = "spam",
+    callback = Spam
+})
+
+vm:CreateCommand({
+    name = "unspam",
+    callback = Unspam
+})
+
 Player.Chatted:Connect(function(msg)
     if msg:sub(1, 1) == parser.CmdPrefix then
         local ok, code = pcall(parser.ParseString, parser, msg)
         if ok then
             vm:Execute(code)
         end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    for _, List in ipairs(TargetList) do
+        Remove(List, player)
     end
 end)
 
@@ -962,8 +1254,8 @@ end)
 AdminScreenGui.Parent = CoreGui
 
 coroutine.wrap(function()
-    while task.wait(1.5) do
-        KillPlayers(LoopKillingPlayers)
+    while task.wait(3) do
+        KillPlayers(TargetList.LoopKilling, true)
     end
 end)()
 
