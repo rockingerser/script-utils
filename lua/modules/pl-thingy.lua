@@ -24,6 +24,7 @@ local CarContainer = workspace.CarContainer
 local Player = Players.LocalPlayer
 local TeamEvent = Remote.TeamEvent
 local GotArrested = Remote.arrestPlayer
+local Arrest = Remote.arrest
 local ItemHandler = Remote.ItemHandler
 local ShootEvent = ReplicatedStorage.ShootEvent
 local ReloadEvent = ReplicatedStorage.ReloadEvent
@@ -47,6 +48,8 @@ local TargetList = {
     LoopKilling = {}
 }
 local KillingPlayers = {}
+local FlingingPlayers = {}
+local ArrestingPlayers = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
@@ -61,9 +64,10 @@ local Secret =  HttpService:GenerateGUID()
 local NeonTxtIns = nil
 local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
-local BiggestNumber = math.huge * math.huge --1.7976931348623157e308
+local BiggestNumber = 3e15
 local InvisiblePriority = 99
-local TpKillPriority = 300
+local ArrestPriority = 2100
+local TpKillPriority = 2400
 local GetCarPriority = 2700
 local GetItemPriority = 3000
 local PistolName = "M9"
@@ -74,6 +78,7 @@ local KnifeName = "Crude Knife"
 local HammerName = "Hammer"
 local KeyCardName = "Key card"
 local OtherGunThatBehavesLikeTheAkName = "M4A1"
+local ChattedDebounce = false
 local CarSpawners = {}
 local DefaultState = {
     pistol = false,
@@ -89,6 +94,10 @@ local DefaultState = {
     team = Inmates
 }
 local CurrentState = DefaultState
+local JailLocations = {
+    CFrame.new(-321, 84, 2046),
+    CFrame.new(711, 102, 2373)
+}
 
 
 coroutine.wrap(function()
@@ -259,6 +268,13 @@ function RestoreState(NoRespawn)
     RestoringState = false
 end
 
+function InvalidPlayer(player)
+    if typeof(player) ~= "Instance" or not player:IsA("Player") then
+        return true
+    end
+    return false
+end
+
 function SpoofPosition(Name, Priority, Value)
     if SpoofsNames[Name] ~= nil then
         SpoofsNames[Name].value = Value
@@ -286,7 +302,8 @@ function SpoofPosition(Name, Priority, Value)
 end
 
 function TpCar(Car, Cframe)
-    Car:PivotTo(Cframe * LocalRoot.CFrame:Inverse() * Car.WorldPivot)
+    Car.WorldPivot = LocalRoot.CFrame
+    Car:PivotTo(Cframe)
 end
 
 function SitInCar(CarModel)
@@ -312,9 +329,27 @@ function SitInCar(CarModel)
     return false
 end
 
-function GetCar()
+function CarGetFreeSeats(Car)
+    local Seats = {}
+    for _, Seat in ipairs(Car:WaitForChild("Body"):GetChildren()) do
+        if Seat:IsA("Seat") and Seat.Occupant == nil then
+            table.insert(Seats, Seat)
+        end
+    end
+    return Seats
+end
+
+function GetCar(callback)
     if LocalHumanoid:GetState() == Enum.HumanoidStateType.Seated then
         LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+    end
+
+    if typeof(callback) ~= "function" then
+        callback = function(Car, OldCFrame)
+            TpCar(Car, OldCFrame)
+            task.wait(.15)
+            LocalHumanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+        end
     end
 
     local OldCFrame
@@ -322,10 +357,7 @@ function GetCar()
     for _, Car in ipairs(CarContainer:GetChildren()) do
         OldCFrame = LocalRoot.CFrame
         if SitInCar(Car) then
-            TpCar(Car, OldCFrame)
-            task.wait(.18)
-            LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
-            return
+            return callback(Car, OldCFrame)
         end
     end
 
@@ -336,10 +368,7 @@ function GetCar()
         if SitInCar(Car) then
             CarSpawned:Disconnect()
             SpawnCarEvent:Disconnect()
-            TpCar(Car, OldCFrame)
-            task.wait(.18)
-            LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
-            return
+            return callback(Car, OldCFrame)
         end
         SpawnCar:Fire()
     end)
@@ -361,6 +390,64 @@ function GetCar()
     end)
 
     SpawnCar:Fire()
+end
+
+function SitPlayerInCar(player, callback)
+    if InvalidPlayer(player) then
+        return
+    end
+
+    if typeof(callback) ~= "function" then
+        callback = function() end
+    end
+    GetCar(function(Car, OldCFrame)
+        local TargetRoot = GetCharLimb("HumanoidRootPart", false, player)
+        local TargetHum = GetCharLimb("Humanoid", false, player)
+        if TargetRoot and TargetHum then
+            local FreeSeats = CarGetFreeSeats(Car)
+            local OldTime = os.clock()
+            workspace.CurrentCamera.CameraSubject = TargetHum
+            repeat
+                TpCar(Car, TargetRoot.CFrame * CFrame.Angles(
+                    RandGen:NextNumber(-math.pi, math.pi),
+                    RandGen:NextNumber(-math.pi, math.pi),
+                    RandGen:NextNumber(-math.pi, math.pi)
+                ))
+                RunService.PostSimulation:Wait()
+            until TargetHum.SeatPart and table.find(FreeSeats, TargetHum.SeatPart) or os.clock() - OldTime > 3
+            return callback(Car, OldCFrame, if table.find(FreeSeats, TargetHum.SeatPart) then TargetHum else nil)
+        end
+
+        callback(Car, OldCFrame, nil)
+    end)
+end
+
+function JailPlayer(player)
+    SitPlayerInCar(player, function(Car, OldCFrame)
+        TpCar(Car, JailLocations[RandGen:NextInteger(1, #JailLocations)])
+        task.wait(.15)
+        LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
+        RunService.PostSimulation:Wait()
+        LocalRoot.CFrame = OldCFrame
+    end)
+end
+
+function VoidPlayer(player)
+    SitPlayerInCar(player, function(Car, OldCFrame)
+        TpCar(Car, CFrame.new(BiggestNumber, BiggestNumber, BiggestNumber))
+        task.wait(.15)
+        LocalHumanoid.Sit = false
+        LocalRoot.CFrame = OldCFrame
+    end)
+end
+
+function CarKillPlayer(player)
+    SitPlayerInCar(player, function(_, OldCFrame, SeatedHum)
+        TpCar(Car, CFrame.new(BiggestNumber, workspace.FallenPartsDestroyHeight + 9, BiggestNumber))
+        task.wait(.15)
+        LocalHumanoid.Sit = false
+        LocalRoot.CFrame = OldCFrame
+    end)
 end
 
 function UnspoofPosition(Name)
@@ -597,6 +684,9 @@ function KillMyself()
 end
 
 function GetItem(ItemName)
+    if Player:FindFirstChild("Backpack") == nil or Player.Team == Guards and (ItemName == KnifeName or ItemName == HammerName) then
+        return
+    end
     local Item = (
         PrisonItems.giver:FindFirstChild(ItemName) or
         PrisonItems.single[ItemName]
@@ -630,22 +720,40 @@ function GunKillPlayers(players, taser)
 
     local Gun
     local Shoots = {}
+    local ShouldReset = false
+    local NumHits = if taser then
+        1
+    else
+        6
 
-    --[[if taser then
-
-    else]]
+    if taser then
+        if Player.Team ~= Guards then
+            SaveState()
+            SwitchToTeam(Guards, true)
+            ShouldReset = true
+        end
+        if Player.Team ~= Guards then
+            return
+        end
+        Player:WaitForChild("Backpack"):WaitForChild("Taser")
+    else
         while GetToolInBackpack(PistolName) == nil do
             GetItem(PistolName)
         end
-    --end
-    Gun = GetToolInBackpack(PistolName)
+    end
+    Gun = GetToolInBackpack(
+        if taser then
+            "Taser"
+        else
+            PistolName
+    )
 
     for _, player in ipairs(players) do
         local TargetHumanoid = GetCharLimb("Humanoid", false, player)
         local TargetHead = GetCharLimb("Head", false, player)
 
         if TargetHead and TargetHumanoid and TargetHumanoid:GetState() ~= Enum.HumanoidStateType.Dead then
-            for i = 0, 6 do
+            for i = 0, NumHits do
                 table.insert(Shoots, {
                     RayObject = Ray.new(Vector3.zero, Vector3.zero),
                     Distance = 1024,
@@ -662,6 +770,10 @@ function GunKillPlayers(players, taser)
 
     ShootEvent:FireServer(Shoots, Gun)
     ReloadEvent:FireServer(Gun)
+
+    if ShouldReset then
+        RestoreState()
+    end
 end
 
 function TpKillPlayers(players)
@@ -940,7 +1052,7 @@ function UninfJump()
 end
 
 function GotoPlayer(player)
-    if typeof(player) ~= "Instance" or not player:IsA("Player") or GetCharLimb(player, false, "HumanoidRootPart") then
+    if InvalidPlayer(player) or GetCharLimb(player, false, "HumanoidRootPart") then
         return
     end
     LocalRoot.CFrame = player.Character.HumanoidRootPart.CFrame
@@ -973,13 +1085,92 @@ function Spam()
     end
 
     repeat
-        task.wait(.6)
+        task.wait(1.8)
         SayMessage:FireServer(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], "All")
     until not SpamEnabled
 end
 
 function Unspam()
     SpamEnabled = false
+end
+
+function GetGuns()
+    coroutine.wrap(GetItem)(PistolName)
+    GetItem(ShotgunName)
+    GetItem(AkName)
+    GetItem(KnifeName)
+    GetItem(HammerName)
+end
+
+function Sus()
+    GetGuns()
+    local Pistol = GetToolInBackpack(PistolName)
+    local Shotgun = GetToolInBackpack(ShotgunName)
+    local Ak = GetToolInBackpack(AkName)
+    local Hammer = GetToolInBackpack(HammerName)
+    local Knife = GetToolInBackpack(KnifeName)
+
+    --[[Pistol.Parent = Player.Backpack
+    Shotgun.Parent = Player.Backpack
+    Ak.Parent = Player.Backpack]]
+
+    Pistol.Grip = CFrame.new(1, 2, 0)
+    Shotgun.Grip = CFrame.new(1, 2, 2.7)
+    Ak.Grip = CFrame.new(1, 2, 7.2)
+
+    if Hammer then
+        Hammer.Grip = CFrame.Angles(math.pi / 2, 0, 0) * CFrame.new(1, 1.8, 12.1)
+        Knife.Grip = CFrame.Angles(math.pi / 2, 0, 0) CFrame.new(1, 2, 14.1)
+        
+        Hammer.Parent = LocalCharacter
+        Knife.Parent = LocalCharacter
+    end
+
+    Pistol.Parent = LocalCharacter
+    Shotgun.Parent = LocalCharacter
+    Ak.Parent = LocalCharacter
+end
+
+function TazePlayers(players)
+    local ActualPlayers = Insert({}, players)
+    local TazeablePlayers = {}
+
+    for _, player in ipairs(ActualPlayers) do
+        if player.Team == Guards or player == Player then
+            continue
+        end
+        table.insert(TazeablePlayers, player)
+    end
+
+    GunKillPlayers(TazeablePlayers, true)
+end
+
+function ArrestPlayers(players)
+    local PlayersToArrest = Insert({}, players)
+    local ShouldBeginArrest = #ArrestingPlayers == 0
+
+    for _, player in ipairs(PlayersToArrest) do
+        if table.find(ArrestingPlayers, player) or player.Team == Guards then
+            continue
+        end
+        table.insert(ArrestingPlayers, player)
+    end
+
+    if ShouldBeginArrest then
+        while #ArrestingPlayers > 0 do
+            local TargetPlayer = table.remove(ArrestingPlayers, 1)
+            local TargetHead = GetCharLimb("Head", true, TargetPlayer)
+
+            local ArrestStep = RunService.PreSimulation:Connect(function()
+                SpoofPosition("arrestplayertask", ArrestPriority, TargetHead.CFrame)
+                Arrest:InvokeServer(TargetHead)
+            end)
+
+            TargetHead:WaitForChild("handcuffedGui", 3)
+            ArrestStep:Disconnect()
+        end
+        UnspoofPosition("arrestplayertask")
+    end
 end
 
 Players.PlayerAdded:Connect(PlayerAdded)
@@ -1209,16 +1400,86 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-    name = "spam",
+    name = "wallace",
     callback = Spam
 })
 
 vm:CreateCommand({
-    name = "unspam",
+    name = "unwallace",
     callback = Unspam
 })
 
+vm:CreateCommand({
+    name = "guns",
+    callback = GetGuns
+})
+
+vm:CreateCommand({
+    name = "algointeresante",
+    callback = Sus
+})
+
+vm:CreateCommand({
+    name = "taze",
+    callback = TazePlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "jail",
+    callback = JailPlayer,
+    args = {
+        {
+            name = "player"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "vanish",
+    callback = VoidPlayer,
+    args = {
+        {
+            name = "player"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "carkill",
+    callback = CarKillPlayer,
+    args = {
+        {
+            name = "player"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "arrest",
+    callback = ArrestPlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
+})
+
 Player.Chatted:Connect(function(msg)
+    if ChattedDebounce then
+        return
+    end
+    ChattedDebounce = true
+
+    coroutine.wrap(function()
+        task.wait(.6)
+        ChattedDebounce = false
+    end)()
+
     if msg:sub(1, 1) == parser.CmdPrefix then
         local ok, code = pcall(parser.ParseString, parser, msg)
         if ok then
