@@ -1,12 +1,12 @@
 local HttpService = game:GetService("HttpService")
---[[r _, Event in ipairs(game:GetDescendants()) do
+for _, Event in ipairs(game:GetDescendants()) do
     if Event:IsA("RemoteEvent") then
         Event.OnClientEvent:Connect(function(...)
             print(Event:GetFullName(), ":", ...)
         end)
     end
-end]]
-
+end
+--[[
 local args = {
     [1] = {
         [1] = {
@@ -35,5 +35,5 @@ game.ReplicatedStorage.ReplicateEvent.OnClientEvent:Connect(function(Table)
     end
 end)
 
-loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"))()]]
 

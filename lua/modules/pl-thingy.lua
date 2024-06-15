@@ -11,6 +11,8 @@ local HttpService = game:GetService("HttpService")
 local Teams = game:GetService("Teams")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
+local NetworkClient = game:GetService("NetworkClient")
 local AdminScreenGui = Instance.new("ScreenGui")
 local AdminCmdBox = Instance.new("TextBox")
 local AdminRoundCorners = Instance.new("UICorner")
@@ -20,6 +22,7 @@ local SpoofIndicatorPart = Instance.new("Part")
 local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
 local Remote = workspace.Remote
 local PrisonItems = workspace.Prison_ITEMS
+local Doors = workspace.Doors
 local CarContainer = workspace.CarContainer
 local Player = Players.LocalPlayer
 local TeamEvent = Remote.TeamEvent
@@ -28,7 +31,9 @@ local Arrest = Remote.arrest
 local ItemHandler = Remote.ItemHandler
 local ShootEvent = ReplicatedStorage.ShootEvent
 local ReloadEvent = ReplicatedStorage.ReloadEvent
+local SoundEvent = ReplicatedStorage.SoundEvent
 local MeleeEvent = ReplicatedStorage.meleeEvent
+local ReplicateBullets = ReplicatedStorage.ReplicateEvent
 local ChatEvent = ReplicatedStorage.DefaultChatSystemChatEvents
 local SayMessage = ChatEvent.SayMessageRequest
 local Guards = Teams.Guards
@@ -40,23 +45,26 @@ local RandGen = Random.new()
 local SpoofsOrder = {}
 local Spoofs = {}
 local SpoofsNames = {}
-local TargetList = {
-    Killing = {},
-    PendingNuke = {},
-    Oneshot = {},
-    NoGuns = {},
-    LoopKilling = {}
-}
+local VelSpoofsOrder = {}
+local VelSpoofs = {}
+local VelSpoofsNames = {}
 local KillingPlayers = {}
 local FlingingPlayers = {}
 local ArrestingPlayers = {}
+local DrawingQueue = {}
+local Turrets = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
 local AntikillEnabled = false
 local AntiarrestEnabled = false
+local InvisibleEnabled = false
 local InfiniteJumpEnabled = false
+local TouchFlingEnabled = false
+local FreezingServer = false
+local LaggingEveryone = false
 local SpamEnabled = false
+local SpammingSounds = false
 local RestoringState = false
 local InfiniteYieldLoaded = false
 local DexLoaded = false
@@ -66,10 +74,14 @@ local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
 local BiggestNumber = 3e15
 local InvisiblePriority = 99
+local InvisibleTouchFlingPriority = 150
+local FlingPlayersPosPriority = 1800
 local ArrestPriority = 2100
 local TpKillPriority = 2400
 local GetCarPriority = 2700
 local GetItemPriority = 3000
+local TouchFlingPriority = 99
+local FlingPlayersVelPriority = 1500
 local PistolName = "M9"
 local TaserName = "Taser"
 local ShotgunName = "Remington 870"
@@ -79,7 +91,23 @@ local HammerName = "Hammer"
 local KeyCardName = "Key card"
 local OtherGunThatBehavesLikeTheAkName = "M4A1"
 local ChattedDebounce = false
+local FlingForce = 2100
+local DrawYield = .3
 local CarSpawners = {}
+local SpamSounds = {}
+local NumDraws = 0
+local DrawingBullets = false
+local JailLocations = {
+    CFrame.new(-321, 84, 2046),
+    CFrame.new(711, 102, 2373)
+}
+local TargetList = {
+    Killing = {},
+    PendingNuke = {},
+    Oneshot = {},
+    NoGuns = {},
+    LoopKilling = {}
+}
 local DefaultState = {
     pistol = false,
     --taser = false,
@@ -94,11 +122,9 @@ local DefaultState = {
     team = Inmates
 }
 local CurrentState = DefaultState
-local JailLocations = {
-    CFrame.new(-321, 84, 2046),
-    CFrame.new(711, 102, 2373)
-}
-
+local LaggingServer = false
+local TimeRefresh = math.huge
+local ServerLagRatio = 6
 
 coroutine.wrap(function()
     task.wait(12)
@@ -154,8 +180,6 @@ SpoofIndicatorPart.Parent = workspace
 -- Import some admin modules
 local CommandVM = loadstring(game:HttpGet("https://pastebin.com/raw/27Lnax7E"), true)()
 local Parser = loadstring(game:HttpGet("https://pastebin.com/raw/t7RunsQs"), true)()
--- HTTP 429 Prevention
-task.wait(3)
 
 local vm = CommandVM.new()
 local parser = Parser.new(vm)
@@ -209,6 +233,8 @@ function SaveState()
     
     return CurrentState
 end
+
+
 
 function RestoreState(NoRespawn)
     if CurrentState.team == Neutral or Player.Team == Neutral then
@@ -299,6 +325,32 @@ function SpoofPosition(Name, Priority, Value)
 
     table.insert(Spoofs, IndexOrder, SpoofData)
     SpoofsNames[Name] = SpoofData
+end
+
+function SpoofVelocity(Name, Priority, Value)
+    if VelSpoofsNames[Name] ~= nil then
+        VelSpoofsNames[Name].value = Value
+        return
+    end
+
+    local IndexOrder = 1
+
+    for _, OtherPriority in ipairs(SpoofsOrder) do
+        if Priority < OtherPriority then
+            IndexOrder += 1
+            continue
+        end
+        break
+    end
+
+    table.insert(VelSpoofsOrder, IndexOrder, Priority)
+    local SpoofData = {
+        priority = Priority,
+        value = Value
+    }
+
+    table.insert(VelSpoofs, IndexOrder, SpoofData)
+    VelSpoofsNames[Name] = SpoofData
 end
 
 function TpCar(Car, Cframe)
@@ -426,8 +478,7 @@ function JailPlayer(player)
     SitPlayerInCar(player, function(Car, OldCFrame)
         TpCar(Car, JailLocations[RandGen:NextInteger(1, #JailLocations)])
         task.wait(.15)
-        LocalHumanoid:ChangeState(Enum.HumanoidStateType.Running)
-        RunService.PostSimulation:Wait()
+        LocalHumanoid.Sit = false
         LocalRoot.CFrame = OldCFrame
     end)
 end
@@ -463,6 +514,87 @@ function UnspoofPosition(Name)
     SpoofsNames[Name] = nil
 end
 
+function UnspoofVelocity(Name)
+    if VelSpoofsNames[Name] == nil then
+        return
+    end
+
+    local SpoofToRemove = VelSpoofsNames[Name]
+    local IndexOrder = table.find(VelSpoofs, SpoofToRemove)
+
+    table.remove(VelSpoofsOrder, IndexOrder)
+    table.remove(VelSpoofs, IndexOrder)
+    VelSpoofsNames[Name] = nil
+end
+
+function Draw3D(Data)
+    local ShouldBeginDraw = #DrawingQueue == 0
+    for _, Bullet in ipairs(Data) do
+        table.insert(DrawingQueue, Bullet)
+    end
+
+    if ShouldBeginDraw and not DrawingBullets then
+        DrawingBullets = true
+        coroutine.wrap(function()
+            while true do
+                while GetToolInBackpack(AkName) == nil do
+                    GetItem(AkName)
+                end
+
+                local Ak = GetToolInBackpack(AkName)
+
+                for _, Connection in pairs(getconnections(ReplicateBullets.OnClientEvent)) do
+                    Connection:Fire(DrawingQueue)
+                end
+                ShootEvent:FireServer(DrawingQueue, Ak)
+
+                -- Prevent lagging the server
+                if NumDraws % 24 == 3 then
+                    ReloadEvent:FireServer(Ak)
+                end
+
+                NumDraws += 1
+                table.clear(DrawingQueue)
+                task.wait(DrawYield)
+
+                if #DrawingQueue == 0 then
+                    DrawingBullets = false
+                    break
+                end
+            end
+        end)()
+    end
+end
+
+function Draw3DGenerateBlock(Cframe, Size)
+    local HalfSize = Size / 2
+    return {
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.X,
+            Cframe = Cframe * CFrame.new(0, HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.X,
+            Cframe = Cframe * CFrame.new(0, -HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+        }
+    }
+end
+
+function Draw3DBullet(From, To, Hit)
+    return {
+        RayObject = Ray.new(Vector3.zero, Vector3.zero),
+        Distance = (From - To).Magnitude,
+        Cframe = CFrame.lookAt(
+            From:Lerp(To, .5),
+            To,
+            Vector3.yAxis
+        ),
+        Hit = Hit
+    }
+end
+
 function HasLethalTools(player)
     local Tools = { player.Character:FindFirstChildOfClass("Tool") }
 
@@ -485,13 +617,40 @@ function CharacterAdded(NewCharacter)
     local Humanoid = NewCharacter:WaitForChild("Humanoid")
     local Root = NewCharacter:WaitForChild("HumanoidRootPart")
     local Head = NewCharacter:WaitForChild("Head")
-    local SpoofsOldCFrame
+    local Backpack = player:WaitForChild("Backpack")
+    local MySounds = {}
+    local Tools = {}
+    local SpoofsOldCFrame = nil
+    local SpoofsOldVel = nil
     local Arrested = false
+    local HealthChanged = nil
+    local NoGunsCheck = nil
+
+
+    local function ToolSoundAdded(Sound)
+        if Sound:IsA("Sound") then
+            local SoundArg = {
+                Sound,
+                Sound:FindFirstAncestorOfClass("Tool")
+            }
+
+            table.insert(MySounds, SoundArg)
+            table.insert(SpamSounds, SoundArg)
+        end
+    end
 
     Humanoid.Died:Once(function()
+        HealthChanged:Disconnect()
+        NoGunsCheck:Disconnect()
+
         if PassCheck(player, TargetList.PendingNuke) then
             KillPlayers(Players:GetPlayers())
         end
+
+        for _, Sound in ipairs(MySounds) do
+            table.remove(SpamSounds, table.find(SpamSounds, Sound))
+        end
+
         if player == Player and AntikillEnabled then
             SaveState()
             if Arrested then
@@ -501,19 +660,37 @@ function CharacterAdded(NewCharacter)
         end
     end)
 
-    local HealthChanged, NoGunsCheck = nil, nil
     HealthChanged = Humanoid.HealthChanged:Connect(function()
         if PassCheck(player, TargetList.Oneshot) then
-            HealthChanged:Disconnect()
             KillPlayers(player)
         end
     end)
-    NoGunsCheck = player.Backpack.ChildAdded:Connect(function(Gun)
+    NoGunsCheck = Backpack.ChildAdded:Connect(function(Gun)
+        if table.find(Tools, Gun) == nil then
+            table.insert(Tools, Gun)
+            for _, Des in ipairs(Gun:GetDescendants()) do
+                ToolSoundAdded(Des)
+            end
+        end
+
         if player.Team ~= Guards and PassCheck(player, TargetList.NoGuns) and HasLethalTools(player) then
-            NoGunsCheck:Disconnect()
             KillPlayers(player)
         end
     end)
+
+    for _, Tool in ipairs(Backpack:GetChildren()) do
+        table.insert(Tools, Tool)
+        for _, Des in ipairs(Tool:GetDescendants()) do
+            ToolSoundAdded(Des)
+        end
+    end
+
+    local Punch = {
+        Head:WaitForChild("punchSound")
+    }
+
+    table.insert(MySounds, Punch)
+    table.insert(SpamSounds, Punch)
 
     if player ~= Player then
         return
@@ -525,6 +702,8 @@ function CharacterAdded(NewCharacter)
 
     local SpoofServer = RunService.PostSimulation:Connect(function()
         local SpoofsCurrent = Spoofs[1]
+        local VelSpoofsCurrent = VelSpoofs[1]
+
         SpoofIndicatorPartOutline.Transparency = 1
         if SpoofsCurrent then
             SpoofsOldCFrame = Root.CFrame
@@ -533,6 +712,10 @@ function CharacterAdded(NewCharacter)
             SpoofIndicatorPart.CFrame = SpoofsCurrent.value
             Root.CFrame = SpoofsCurrent.value
         end
+        if VelSpoofsCurrent then
+            SpoofsOldVel = Root.AssemblyLinearVelocity
+            Root.AssemblyLinearVelocity = VelSpoofsCurrent.value
+        end
     end)
 
     RunService:BindToRenderStep(Secret, 198, function()
@@ -540,16 +723,18 @@ function CharacterAdded(NewCharacter)
             Root.CFrame = SpoofsOldCFrame
             SpoofsOldCFrame = nil
         end
+        if SpoofsOldVel then
+            Root.AssemblyLinearVelocity = SpoofsOldVel
+            SpoofsOldVel = nil
+        end
     end)
 
-    --[[Player.CharacterRemoving:Once(function()
-        if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and Head:FindFirstChild("handcuffedGui") == nil then
-            SaveState()
+    Root.Touched:Connect(function(Hit)
+        local TargetPlayer = Players:GetPlayerFromCharacter(Hit.Parent)
+        if TouchFlingEnabled and InvisibleEnabled and TargetPlayer then
+            FlingPlayers(TargetPlayer)
         end
-        if AntiarrestEnabled then
-            RestoreState()
-        end
-    end)]]
+    end)
 
     GotArrested.OnClientEvent:Once(function()
         if AntiarrestEnabled then
@@ -685,6 +870,7 @@ end
 
 function GetItem(ItemName)
     if Player:FindFirstChild("Backpack") == nil or Player.Team == Guards and (ItemName == KnifeName or ItemName == HammerName) then
+        RunService.PostSimulation:Wait()
         return
     end
     local Item = (
@@ -757,7 +943,7 @@ function GunKillPlayers(players, taser)
                 table.insert(Shoots, {
                     RayObject = Ray.new(Vector3.zero, Vector3.zero),
                     Distance = 1024,
-                    CFrame = TargetHead.CFrame * CFrame.Angles(
+                    Cframe = TargetHead.CFrame * CFrame.Angles(
                         RandGen:NextNumber(0, math.pi * 2),
                         RandGen:NextNumber(0, math.pi * 2),
                         RandGen:NextNumber(0, math.pi * 2)
@@ -803,6 +989,7 @@ function TpKillPlayers(players)
                 end
                 RunService.PostSimulation:Wait()
             end
+            RunService.PostSimulation:Wait()
         until #KillingPlayers == 0
         UnspoofPosition("tpkilltask")
         return
@@ -987,12 +1174,9 @@ end
 
 coroutine.wrap(function()
         while true do
-            RunService.PostSimulation:Wait()
+            task.wait(DrawYield)
             if typeof(TargetBillboardTextPlayer) ~= "Instance" or not TargetBillboardTextPlayer:IsA("Player") then
                 continue
-            end
-            if GetToolInBackpack(PistolName) == nil then
-                GetItem(PistolName)
             end
             local TargetCharacter = TargetBillboardTextPlayer.Character
             if TargetCharacter == nil then
@@ -1004,8 +1188,7 @@ coroutine.wrap(function()
             end
             NeonTxtIns.CFrame = TargetHead.CFrame * CFrame.new(0, 3, 0)
             pcall(NeonTxtIns.Render, NeonTxtIns)
-            NeonTxtIns:Draw()
-            task.wait(.6)
+            Draw3D(NeonTxtIns.RenderedBullets)
         end
 end)()
 
@@ -1014,11 +1197,20 @@ function UnLoopkillPlayers(players)
 end
 
 function Invisible()
-    SpoofPosition("i'm invisible", InvisiblePriority, CFrame.new(BiggestNumber, BiggestNumber, BiggestNumber))
+    InvisibleEnabled = true
+    repeat
+        SpoofPosition("i'm invisible", InvisiblePriority, CFrame.new(
+            RandGen:NextNumber(-BiggestNumber, BiggestNumber),
+            RandGen:NextNumber(-3, BiggestNumber),
+            RandGen:NextNumber(-BiggestNumber, BiggestNumber)
+        ))
+        RunService.PreSimulation:Wait()
+    until not InvisibleEnabled
+    UnspoofPosition("i'm invisible")
 end
 
 function Visible()
-    UnspoofPosition("i'm invisible")
+    InvisibleEnabled = false
 end
 
 function Antikill()
@@ -1172,6 +1364,186 @@ function ArrestPlayers(players)
         UnspoofPosition("arrestplayertask")
     end
 end
+
+function TouchFling()
+    if TouchFlingEnabled then
+        return
+    end
+    TouchFlingEnabled = true
+    
+    repeat
+        SpoofVelocity("touchflingtask", TouchFlingPriority, CFrame.Angles(0, RandGen:NextNumber(-math.pi, math.pi), 0):VectorToWorldSpace(Vector3.new(0, 60, FlingForce)))
+        RunService.PostSimulation:Wait()
+    until not TouchFlingEnabled
+
+    UnspoofVelocity("touchflingtask")
+end
+
+function UntouchFling()
+    TouchFlingEnabled = false
+end
+
+function FreezeServer()
+    if FreezingServer then
+        return
+    end
+    FreezingServer = true
+    repeat
+        while GetToolInBackpack(AkName) == nil do
+            GetItem(AkName)
+        end
+        local Ak = GetToolInBackpack(AkName)
+        ShootEvent:FireServer({}, Ak)
+        ReloadEvent:FireServer(Ak)
+        RunService.PostSimulation:Wait()
+    until not FreezingServer
+end
+
+function UnfreezeServer()
+    FreezingServer = false
+end
+
+function LagServer()
+    LaggingServer = true
+end
+
+function UnlagServer()
+    LaggingServer = false
+end
+
+function FlingPlayers(players)
+    local ShouldBeginFling = #FlingingPlayers == 0
+    local PlayersToFling = Insert({}, players)
+
+    for _, player in ipairs(PlayersToFling) do
+        if table.find(FlingingPlayers, player) then
+            continue
+        end
+        table.insert(FlingingPlayers, player)
+    end
+
+    if ShouldBeginFling then
+        repeat
+            local TargetPlayer = table.remove(FlingingPlayers, 1)
+            local TargetRoot = GetCharLimb("HumanoidRootPart", false, TargetPlayer)
+            local TargetHum = GetCharLimb("Humanoid", false, TargetPlayer)
+
+            if TargetRoot == nil or TargetHum == nil then
+                continue
+            end
+
+            for i = 0, 12 do
+                if TargetHum:GetState() == Enum.HumanoidStateType.FallingDown or TargetHum:GetState() == Enum.HumanoidStateType.Dead or not TargetRoot:IsDescendantOf(workspace) then
+                    continue
+                end
+                local TargetRootVel = CFrame.new(0, 0, TargetRoot.AssemblyLinearVelocity.Magnitude)
+
+                SpoofVelocity("flingplayertask", FlingPlayersVelPriority, CFrame.Angles(0, RandGen:NextNumber(-math.pi, math.pi), 0):VectorToWorldSpace(Vector3.new(0, 60, FlingForce)))
+
+                SpoofPosition("flingplayertask", FlingPlayersPosPriority, TargetRoot.CFrame * TargetRootVel:Inverse() * CFrame.Angles(
+                    RandGen:NextNumber(-math.pi, math.pi),
+                    RandGen:NextNumber(-math.pi, math.pi),
+                    RandGen:NextNumber(-math.pi, math.pi)
+                ))
+                
+                task.wait(.09)
+
+                SpoofPosition("flingplayertask", FlingPlayersPosPriority, TargetRoot.CFrame * TargetRootVel * CFrame.Angles(
+                    RandGen:NextNumber(-math.pi, math.pi),
+                    RandGen:NextNumber(-math.pi, math.pi),
+                    RandGen:NextNumber(-math.pi, math.pi)
+                ))
+
+                task.wait(.09)
+            end
+        until #FlingingPlayers == 0
+
+        UnspoofPosition("flingplayertask")
+        UnspoofVelocity("flingplayertask")
+    end
+end
+
+function AnnoyingSounds()
+    if SpammingSounds then
+        return
+    end
+
+    local SoundConnections = getconnections(SoundEvent.OnClientEvent)
+    local SoundNum = 0
+
+    SpammingSounds = true
+
+    NetworkClient:SetOutgoingKBPSLimit(999999)
+    repeat
+        local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
+
+        for _, Connection in pairs(SoundConnections) do
+            Connection:Fire(unpack(Sound))
+        end
+
+        SoundEvent:FireServer(unpack(Sound))
+        SoundNum += 1
+
+        if SoundNum % 9 == 3 then
+            RunService.PostSimulation:Wait()
+        end
+    until not SpammingSounds
+end
+
+function UnannoyingSounds()
+    SpammingSounds = false
+end
+
+function CreateTurret(Name)
+    RemoveTurret(Name)
+
+    local RangeDetector = Instance.new("Part")
+    RangeDetector.Name = HttpService:GenerateGUID(false)
+    RangeDetector.Size = Vector3.one * 60
+    RangeDetector.CanCollide = false
+    RangeDetector.Anchored = true
+    RangeDetector.Transparency = 1
+    RangeDetector.Shape = Enum.PartType.Ball
+    RangeDetector.CFrame = LocalRoot.CFrame
+    RangeDetector.Parent = workspace
+
+    Turrets[Name] = RangeDetector
+end
+
+function RemoveTurret(Name)
+    if Turrets[Name] then
+        Turrets[Name]:Destroy()
+        Turrets[Name] = nil
+    end
+end
+
+function RemoveTurrets()
+    for Name in pairs(Turrets) do
+        RemoveTurret(Name)
+    end
+end
+
+coroutine.wrap(function()
+    while task.wait(DrawYield) do
+        for _, Turret in pairs(Turrets) do
+            Draw3D(Draw3DGenerateBlock(Turret.CFrame, Vector3.new(3, 5, 3)))
+            Draw3D(Draw3DGenerateBlock(Turret.CFrame * CFrame.new(0, 3.75, 0), Vector3.one * 2.5))
+            if NumDraws % 9 == 3 then
+                for _, Part in ipairs(workspace:GetPartsInPart(Turret)) do
+                    local TargetPlayer = Players:GetPlayerFromCharacter(Part.Parent)
+                    if TargetPlayer and TargetPlayer.Team ~= Player.Team then
+                        Draw3D(Draw3DBullet(
+                            Turret.Position + Turret.CFrame:VectorToWorldSpace(Vector3.new(0, 3.75, 0)),
+                            Part.Position,
+                            Part
+                        ))
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)()
 
 Players.PlayerAdded:Connect(PlayerAdded)
 UserInputService.JumpRequest:Connect(function()
@@ -1469,6 +1841,76 @@ vm:CreateCommand({
     }
 })
 
+vm:CreateCommand({
+    name = "touchfling",
+    callback = TouchFling
+})
+
+vm:CreateCommand({
+    name = "untouchfling",
+    callback = UntouchFling
+})
+
+vm:CreateCommand({
+    name = "freezeserver",
+    callback = FreezeServer
+})
+
+vm:CreateCommand({
+    name = "unfreezeserver",
+    callback = UnfreezeServer
+})
+
+vm:CreateCommand({
+    name = "lagspikes",
+    callback = LagServer
+})
+
+vm:CreateCommand({
+    name = "unlagspikes",
+    callback = UnlagServer
+})
+
+vm:CreateCommand({
+    name = "fling",
+    callback = FlingPlayers
+})
+
+vm:CreateCommand({
+    name = "spamsounds",
+    callback = AnnoyingSounds
+})
+
+vm:CreateCommand({
+    name = "unspamsounds",
+    callback = UnannoyingSounds
+})
+
+vm:CreateCommand({
+    name = "turret",
+    callback = CreateTurret,
+    args = {
+        {
+            name = "turretname"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "removeturret",
+    callback = RemoveTurret,
+    args = {
+        {
+            name = "turretname"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "removeturrets",
+    callback = RemoveTurrets
+})
+
 Player.Chatted:Connect(function(msg)
     if ChattedDebounce then
         return
@@ -1519,6 +1961,25 @@ coroutine.wrap(function()
         KillPlayers(TargetList.LoopKilling, true)
     end
 end)()
+
+Lighting:GetPropertyChangedSignal("ClockTime"):Connect(function()
+    if LaggingServer and RandGen:NextInteger(3, 9) == 3 then
+        while GetToolInBackpack(AkName) == nil do
+            GetItem(AkName)
+        end
+
+        local Ak = GetToolInBackpack(AkName)
+        local NumShots = math.max(math.ceil(ServerLagRatio / math.max(os.clock() - TimeRefresh, 1) * RandGen:NextNumber(1, 6)), 1)
+
+        print(NumShots)
+
+        for i = 0, NumShots do
+            ShootEvent:FireServer({}, Ak)
+            ReloadEvent:FireServer(Ak)
+        end
+    end
+    TimeRefresh = os.clock()
+end)
 
 for _, player in ipairs(Players:GetPlayers()) do
     PlayerAdded(player)
