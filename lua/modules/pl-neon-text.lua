@@ -6,9 +6,9 @@ local ReplicateEvent = ReplicatedStorage.ReplicateEvent
 local Reload = ReplicatedStorage.ReloadEvent
 
 -- Neon Text module
--- only lower alphabetical characters, numbers and some symbols
+-- Supports English and Spanish alphabet; numbers and some symbols
 -- Sorry! No documentation
--- (Not fully developed but still works anyway) B <line x1=".12" y1=".24" x2=".12" y2=".9">
+-- (Not fully developed but still works anyway)
 
 local Glyphs = {
     ["\00"] = {

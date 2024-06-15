@@ -92,7 +92,7 @@ local KeyCardName = "Key card"
 local OtherGunThatBehavesLikeTheAkName = "M4A1"
 local ChattedDebounce = false
 local FlingForce = 2100
-local DrawYield = .3
+local DrawYield = .36
 local CarSpawners = {}
 local SpamSounds = {}
 local NumDraws = 0
@@ -128,7 +128,7 @@ local ServerLagRatio = 6
 
 coroutine.wrap(function()
     task.wait(12)
-    NeonTxtIns = loadstring(game:HttpGet("https://pastebin.com/raw/ra0fj8pP"))().new()
+    NeonTxtIns = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/pl-neon-text.lua"))().new()
     NeonTxtIns.TextSize = 1.5
 end)()
 
@@ -136,6 +136,10 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
     if Spawner.Name == "Car Spawner" then
         table.insert(CarSpawners, Spawner["Car Spawner"])
     end
+end
+
+for _, Door in ipairs(Doors:GetChildren()) do
+    --table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
@@ -178,14 +182,14 @@ AdminCmdBox.Parent = AdminScreenGui
 SpoofIndicatorPart.Parent = workspace
 
 -- Import some admin modules
-local CommandVM = loadstring(game:HttpGet("https://pastebin.com/raw/27Lnax7E"), true)()
-local Parser = loadstring(game:HttpGet("https://pastebin.com/raw/t7RunsQs"), true)()
+local CommandVM = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-vm.lua"), true)()
+local Parser = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-parser.lua"), true)()
 
 local vm = CommandVM.new()
 local parser = Parser.new(vm)
 
 -- Import basic commands
-loadstring(game:HttpGet("https://pastebin.com/raw/V1e3Zsub"), true)()(vm)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/stdcmds.lua"), true)()(vm)
 
 function Chat(msg, channel)
     SayMessage:FireServer(msg, channel or "All")
@@ -578,20 +582,76 @@ function Draw3DGenerateBlock(Cframe, Size)
             RayObject = Ray.new(Vector3.zero, Vector3.zero),
             Distance = Size.X,
             Cframe = Cframe * CFrame.new(0, -HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.X,
+            Cframe = Cframe * CFrame.new(0, HalfSize.Y, -HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.X,
+            Cframe = Cframe * CFrame.new(0, -HalfSize.Y, -HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+        },
+        
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Z,
+            Cframe = Cframe * CFrame.new(HalfSize.X, HalfSize.Y, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Z,
+            Cframe = Cframe * CFrame.new(HalfSize.X, -HalfSize.Y, 0)
+        },
+
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Z,
+            Cframe = Cframe * CFrame.new(-HalfSize.X, HalfSize.Y, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Z,
+            Cframe = Cframe * CFrame.new(-HalfSize.X, -HalfSize.Y, 0)
+        },
+
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Y,
+            Cframe = Cframe * CFrame.new(HalfSize.X, 0, HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Y,
+            Cframe = Cframe * CFrame.new(-HalfSize.X, 0, HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+        },
+
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Y,
+            Cframe = Cframe * CFrame.new(HalfSize.X, 0, -HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+        },
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = Size.Y,
+            Cframe = Cframe * CFrame.new(-HalfSize.X, 0, -HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
         }
     }
 end
 
 function Draw3DBullet(From, To, Hit)
     return {
-        RayObject = Ray.new(Vector3.zero, Vector3.zero),
-        Distance = (From - To).Magnitude,
-        Cframe = CFrame.lookAt(
-            From:Lerp(To, .5),
-            To,
-            Vector3.yAxis
-        ),
-        Hit = Hit
+        {
+            RayObject = Ray.new(Vector3.zero, Vector3.zero),
+            Distance = (From - To).Magnitude,
+            Cframe = CFrame.lookAt(
+                From:Lerp(To, .5),
+                To,
+                Vector3.yAxis
+            ),
+            Hit = Hit
+        }
     }
 end
 
@@ -625,6 +685,7 @@ function CharacterAdded(NewCharacter)
     local Arrested = false
     local HealthChanged = nil
     local NoGunsCheck = nil
+    local RootSoundAdded = nil
 
 
     local function ToolSoundAdded(Sound)
@@ -642,6 +703,7 @@ function CharacterAdded(NewCharacter)
     Humanoid.Died:Once(function()
         HealthChanged:Disconnect()
         NoGunsCheck:Disconnect()
+        RootSoundAdded:Disconnect()
 
         if PassCheck(player, TargetList.PendingNuke) then
             KillPlayers(Players:GetPlayers())
@@ -685,12 +747,13 @@ function CharacterAdded(NewCharacter)
         end
     end
 
-    local Punch = {
-        Head:WaitForChild("punchSound")
-    }
+    ToolSoundAdded(Head:WaitForChild("punchSound"))
 
-    table.insert(MySounds, Punch)
-    table.insert(SpamSounds, Punch)
+    for _, Sound in ipairs(Root:GetChildren()) do
+        ToolSoundAdded(Sound)
+    end
+
+    RootSoundAdded = Root.ChildAdded:Connect(ToolSoundAdded)
 
     if player ~= Player then
         return
@@ -896,6 +959,7 @@ function GetItem(ItemName)
     while Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
         ItemHandler:InvokeServer(Item)
     end
+    RunService.PostSimulation:Wait()
     UnspoofPosition("getitemtask"..ItemName)
 end
 
@@ -1388,13 +1452,21 @@ function FreezeServer()
         return
     end
     FreezingServer = true
+
+    NetworkClient:SetOutgoingKBPSLimit(999999999)
     repeat
         while GetToolInBackpack(AkName) == nil do
             GetItem(AkName)
         end
         local Ak = GetToolInBackpack(AkName)
-        ShootEvent:FireServer({}, Ak)
-        ReloadEvent:FireServer(Ak)
+        local Punch = GetCharLimb("Head") and GetCharLimb("Head"):FindFirstChild("punchSound")
+        for i = 3, 333 do
+            if Punch then
+                SoundEvent:FireServer(Punch)
+            end
+            ShootEvent:FireServer({}, Ak)
+            ReloadEvent:FireServer(Ak)
+        end
         RunService.PostSimulation:Wait()
     until not FreezingServer
 end
@@ -1475,6 +1547,11 @@ function AnnoyingSounds()
 
     NetworkClient:SetOutgoingKBPSLimit(999999)
     repeat
+        if #SpamSounds == 0 then
+            RunService.PostSimulation:Wait()
+            continue
+        end
+
         local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
 
         for _, Connection in pairs(SoundConnections) do
@@ -1484,7 +1561,7 @@ function AnnoyingSounds()
         SoundEvent:FireServer(unpack(Sound))
         SoundNum += 1
 
-        if SoundNum % 9 == 3 then
+        if SoundNum % 30 == 3 then
             RunService.PostSimulation:Wait()
         end
     until not SpammingSounds
@@ -1527,17 +1604,20 @@ coroutine.wrap(function()
     while task.wait(DrawYield) do
         for _, Turret in pairs(Turrets) do
             Draw3D(Draw3DGenerateBlock(Turret.CFrame, Vector3.new(3, 5, 3)))
-            Draw3D(Draw3DGenerateBlock(Turret.CFrame * CFrame.new(0, 3.75, 0), Vector3.one * 2.5))
-            if NumDraws % 9 == 3 then
+            Draw3D(Draw3DGenerateBlock(Turret.CFrame * CFrame.new(0, 3.75, 0), Vector3.new(2, 2.5, 2)))
+            if true or NumDraws % 2 == 0 then
                 for _, Part in ipairs(workspace:GetPartsInPart(Turret)) do
+                    if Part.Name ~= "Head" then
+                        continue
+                    end
                     local TargetPlayer = Players:GetPlayerFromCharacter(Part.Parent)
+
                     if TargetPlayer and TargetPlayer.Team ~= Player.Team then
                         Draw3D(Draw3DBullet(
                             Turret.Position + Turret.CFrame:VectorToWorldSpace(Vector3.new(0, 3.75, 0)),
                             Part.Position,
                             Part
                         ))
-                        break
                     end
                 end
             end
