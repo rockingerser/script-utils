@@ -1849,8 +1849,8 @@ function AnnoyingSounds()
 		SoundEvent:FireServer(unpack(Sound))
 		SoundNum += 1
 
-		if SoundNum % 60 == 3 then
-			task.wait(.09)
+		if SoundNum % 300 == 3 then
+			task.wait(.6)
 		end
 	until not SpammingSounds
 end
