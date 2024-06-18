@@ -205,7 +205,7 @@ loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-u
 function Bypass(text)
 	local out = ""
 	for Start, End in utf8.graphemes(text) do
-		out = text:sub(Start, End).."؜⁤"
+		out = text:sub(Start, End).."󠁑⁤"
 	end
 	return out
 end
