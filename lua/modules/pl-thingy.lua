@@ -263,7 +263,7 @@ function Bypass(text)
 	local out = ""
 	for Start, End in utf8.graphemes(text) do
 		local Char = text:sub(Start, End)
-		out = out..LookAlikes[Char] or Char
+		out = out..if LookAlikes[Char] then LookAlikes[Char] else Char
 	end
 	return out
 end
