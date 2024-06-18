@@ -1962,7 +1962,7 @@ function ChatBypass(msg)
 end
 
 function CopyTeam(player)
-	SwitchToTeam(player.Team)
+	Team(player.Team)
 end
 
 function LoopCopyTeam(player)
