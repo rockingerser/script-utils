@@ -2002,7 +2002,7 @@ function BringAllItems()
 	NetOwner()
 	task.wait(.9)
 	for _, Item in ipairs(PrisonItems.single:GetChildren()) do
-		if Item:FindFirstChild("ITEMPICKUP") == nil or not isnetworkowner(Item.ITEMPICKUP) then
+		if Item:FindFirstChild("ITEMPICKUP") == nil then
 			continue
 		end
 		Item.ITEMPICKUP.CFrame = LocalRoot.CFrame
