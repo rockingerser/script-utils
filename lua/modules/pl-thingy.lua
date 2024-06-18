@@ -208,7 +208,7 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 end
 
 for _, Door in ipairs(Doors:GetChildren()) do
-	--table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
+	table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
@@ -964,7 +964,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		if Sound:IsA("Sound") then
+		if Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
 			local SoundArg = {
 				Sound,
 				Sound:FindFirstAncestorOfClass("Tool")
