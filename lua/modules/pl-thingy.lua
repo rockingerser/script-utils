@@ -964,8 +964,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		print(Sound:FindFirstAncestorOfClass("Tool"))
-		if Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
+		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
 			local SoundArg = {
 				Sound,
 				Sound:FindFirstAncestorOfClass("Tool")
@@ -1009,6 +1008,7 @@ function CharacterAdded(NewCharacter)
 			for _, Des in ipairs(Gun:GetDescendants()) do
 				ToolSoundAdded(Des)
 			end
+			Gun.DescendantAdded:Connect(ToolSoundAdded)
 		end
 
 		if player.Team ~= Guards and PassCheck(player, TargetList.NoGuns) and HasLethalTools(player) then
@@ -1021,6 +1021,7 @@ function CharacterAdded(NewCharacter)
 		for _, Des in ipairs(Tool:GetDescendants()) do
 			ToolSoundAdded(Des)
 		end
+		Tool.DescendantAdded:Connect(ToolSoundAdded)
 	end
 
 	ToolSoundAdded(Head:WaitForChild("punchSound"))
