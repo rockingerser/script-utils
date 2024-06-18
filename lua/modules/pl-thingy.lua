@@ -2002,10 +2002,10 @@ function BringAllItems()
 	NetOwner()
 	task.wait(.9)
 	for _, Item in ipairs(PrisonItems.single:GetChildren()) do
-		if Item:FindFirstChild("ITEMPICKUP") == nil then
+		if Item:FindFirstChild("ITEMPICKUP") == nil or Item.ITEMPICKUP.Anchored or Item.ITEMPICKUP:IsGrounded() then
 			continue
 		end
-		Item.ITEMPICKUP.CFrame = LocalRoot.CFrame
+		Item.ITEMPICKUP.AssemblyRootPart.CFrame = LocalRoot.CFrame
 	end
 end
 
