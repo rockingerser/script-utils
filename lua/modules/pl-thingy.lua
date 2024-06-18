@@ -1600,7 +1600,10 @@ function Spam(PmSpam)
 	SpamEnabled = true
 
 	if SpamSentences == nil then
-		SpamSentences = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
+		SpamSentences = {}--HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
+		table.insert(SpamSentences, "‮nrop")
+		table.insert(SpamSentences, "‮muc")
+		table.insert(SpamSentences, "‮kcid")
 	end
 
 	if SpamDrawings == nil then
@@ -1613,7 +1616,7 @@ function Spam(PmSpam)
 		local players = Players:GetPlayers()
 		local player = if PmSpam then players[RandGen:NextInteger(1, #players)] else nil
 
-		if RandGen:NextInteger(0, 9) == 0 then
+		if RandGen:NextInteger(0, 3) == 0 then
 			task.wait(15)
 			if not SpamEnabled then
 				break
@@ -1629,8 +1632,11 @@ function Spam(PmSpam)
 			continue
 		end
 
-		Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true, player)
-		task.wait(2.1)
+		for i = 0, 7 do
+			Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true, player)
+			task.wait(.6)
+		end
+		task.wait(15)
 	until not SpamEnabled
 end
 
