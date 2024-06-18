@@ -1593,7 +1593,7 @@ function Dex()
 	loadstring(game:HttpGet("https://raw.githubusercontent.com/Babyhamsta/RBLX_Scripts/main/Universal/BypassedDarkDexV3.lua"), true)()
 end
 
-function Spam()
+function Spam(PmSpam)
 	if SpamEnabled then
 		return
 	end
@@ -1611,7 +1611,7 @@ function Spam()
 
 	repeat
 		local players = Players:GetPlayers()
-		local player = players[RandGen:NextInteger(1, #players)]
+		local player = if PmSpam then players[RandGen:NextInteger(1, #players)] else nil
 
 		if RandGen:NextInteger(0, 9) == 0 then
 			task.wait(15)
