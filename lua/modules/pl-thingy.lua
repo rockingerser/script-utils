@@ -1571,6 +1571,9 @@ function Unantiarrest()
 end
 
 function Team(Team)
+	if Player.Team == Inmates and LocalHumanoid:GetState() == Enum.HumanoidStateType.Dead then
+		SwitchToTeam(Inmates, true)
+	end
 	SaveState()
 	SwitchToTeam(Team, true)
 	RestoreState(true)
