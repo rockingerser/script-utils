@@ -126,61 +126,6 @@ local DefaultState = {
 	cframe = nil,
 	team = Inmates
 }
-local Bypass = {
-	A = "Α",  -- Greek Capital Letter Alpha
-	B = "Β",  -- Greek Capital Letter Beta
-	C = "Ϲ",  -- Greek Letter Lunate Sigma
-	D = "Ԁ",  -- Cyrillic Capital Letter Komi De
-	E = "Ε",  -- Greek Capital Letter Epsilon
-	F = "Ϝ",  -- Greek Capital Letter Digamma
-	G = "Ԍ",  -- Cyrillic Capital Letter Gje
-	H = "Η",  -- Greek Capital Letter Eta
-	I = "Ι",  -- Greek Capital Letter Iota
-	J = "Ј",  -- Cyrillic Capital Letter Je
-	K = "Κ",  -- Greek Capital Letter Kappa
-	L = "Ꮮ",  -- Canadian Syllabics La
-	M = "Μ",  -- Greek Capital Letter Mu
-	N = "Ν",  -- Greek Capital Letter Nu
-	O = "Ο",  -- Greek Capital Letter Omicron
-	P = "Ρ",  -- Greek Capital Letter Rho
-	Q = "Ϙ",  -- Greek Letter Koppa
-	R = "Ꭱ",  -- Cherokee Letter E
-	S = "Ѕ",  -- Cyrillic Capital Letter Dze
-	T = "Τ",  -- Greek Capital Letter Tau
-	U = "Ս",  -- Armenian Capital Letter Se
-	V = "Ѵ",  -- Cyrillic Capital Letter Izhitsa
-	W = "Ԝ",  -- Cyrillic Capital Letter We
-	X = "Χ",  -- Greek Capital Letter Chi
-	Y = "Υ",  -- Greek Capital Letter Upsilon
-	Z = "Ζ",  -- Greek Capital Letter Zeta
-
-	a = "ɑ",  -- Latin Small Letter Alpha
-	b = "Ь",  -- Cyrillic Small Letter Soft Sign
-	c = "ϲ",  -- Greek Small Letter Lunate Sigma
-	d = "ԁ",  -- Cyrillic Small Letter Komi De
-	e = "е",  -- Cyrillic Small Letter E
-	f = "ғ",  -- Cyrillic Small Letter Gha
-	g = "ɡ",  -- Armenian Small Letter Co
-	h = "һ",  -- Cyrillic Small Letter Shha
-	i = "і",  -- Cyrillic Small Letter Byelorussian-Ukrainian I
-	j = "ϳ",  -- Greek Small Letter Iota Subscript
-	k = "κ",  -- Greek Small Letter Kappa
-	l = "I", -- Roman Numeral Fifty
-	m = "м",  -- Cyrillic Small Letter Em
-	n = "ɴ",  -- Armenian Small Letter Vo
-	o = "ο",  -- Greek Small Letter Omicron
-	p = "р",  -- Cyrillic Small Letter Er
-	q = "ԛ",  -- Cyrillic Small Letter Qa
-	r = "г",  -- Cyrillic Small Letter Ge
-	s = "ѕ",  -- Cyrillic Small Letter Dze
-	t = "τ",  -- Greek Small Letter Tau
-	u = "υ",  -- Armenian Small Letter Se
-	v = "ѵ",  -- Cyrillic Small Letter Izhitsa
-	w = "ѡ",  -- Cyrillic Small Letter Omega
-	x = "х",  -- Cyrillic Small Letter Ha
-	y = "у",  -- Cyrillic Small Letter U
-	z = "ᴢ"   -- Latin Letter Small Capital Z
-}
 local CurrentState = DefaultState
 local LaggingServer = false
 local TimeRefresh = math.huge
@@ -256,6 +201,14 @@ local parser = Parser.new(vm)
 
 -- Import basic commands
 loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/stdcmds.lua"), true)()(vm)
+
+function Bypass(text)
+	local out = ""
+	for Start, End in utf8.graphemes(text) do
+		out = text:sub(Start, End).."؜⁤"
+	end
+	return out
+end
 
 function Chat(msg, bigtext, channel)
 	local OutMsg = msg
@@ -1601,9 +1554,9 @@ function Spam(PmSpam)
 
 	if SpamSentences == nil then
 		SpamSentences = {}--HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
-		table.insert(SpamSentences, "‮nrop")
-		table.insert(SpamSentences, "‮muc")
-		table.insert(SpamSentences, "‮kcid")
+		table.insert(SpamSentences Bypass("\99\117\109"))
+		table.insert(SpamSentences, Bypass("\98\111\111\98\115"))
+		table.insert(SpamSentences, Bypass("\112\111\114\110"))
 	end
 
 	if SpamDrawings == nil then
