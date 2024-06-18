@@ -1611,7 +1611,7 @@ function Spam(PmSpam)
 	SpamEnabled = true
 
 	if SpamSentences == nil then
-		SpamSentences = {}--HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
+		SpamSentences = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
 		table.insert(SpamSentences, Bypass("\99\117\109"))
 		table.insert(SpamSentences, Bypass("\98\111\111\98\115"))
 		table.insert(SpamSentences, Bypass("\112\111\114\110"))
