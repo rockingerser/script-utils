@@ -20,6 +20,7 @@ local AdminStroke = Instance.new("UIStroke")
 local AdminPadding = Instance.new("UIPadding")
 local SpoofIndicatorPart = Instance.new("Part")
 local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
+local RayPartBullet = Instance.new("Part")
 local Remote = workspace.Remote
 local PrisonItems = workspace.Prison_ITEMS
 local Doors = workspace.Doors
@@ -90,11 +91,14 @@ local KnifeName = "Crude Knife"
 local HammerName = "Hammer"
 local KeyCardName = "Key card"
 local OtherGunThatBehavesLikeTheAkName = "M4A1"
+local DrawCurrGun = PistolName
+local BulletName = "RayPart"
 local ChattedDebounce = false
 local FlingForce = 1500
-local DrawYield = .36
+local DrawYield = .24
 local CarSpawners = {}
 local SpamSounds = {}
+local Npcs = {}
 local NumDraws = 0
 local DrawingBullets = false
 local JailLocations = {
@@ -133,7 +137,7 @@ local Bypass = {
 	I = "Ι",  -- Greek Capital Letter Iota
 	J = "Ј",  -- Cyrillic Capital Letter Je
 	K = "Κ",  -- Greek Capital Letter Kappa
-	L = "ᒪ",  -- Canadian Syllabics La
+	L = "Ꮮ",  -- Canadian Syllabics La
 	M = "Μ",  -- Greek Capital Letter Mu
 	N = "Ν",  -- Greek Capital Letter Nu
 	O = "Ο",  -- Greek Capital Letter Omicron
@@ -155,21 +159,21 @@ local Bypass = {
 	d = "ԁ",  -- Cyrillic Small Letter Komi De
 	e = "е",  -- Cyrillic Small Letter E
 	f = "ғ",  -- Cyrillic Small Letter Gha
-	g = "ց",  -- Armenian Small Letter Co
+	g = "ɡ",  -- Armenian Small Letter Co
 	h = "һ",  -- Cyrillic Small Letter Shha
 	i = "і",  -- Cyrillic Small Letter Byelorussian-Ukrainian I
 	j = "ϳ",  -- Greek Small Letter Iota Subscript
 	k = "κ",  -- Greek Small Letter Kappa
-	l = "ⅼ", -- Roman Numeral Fifty
+	l = "I", -- Roman Numeral Fifty
 	m = "м",  -- Cyrillic Small Letter Em
-	n = "ո",  -- Armenian Small Letter Vo
+	n = "ɴ",  -- Armenian Small Letter Vo
 	o = "ο",  -- Greek Small Letter Omicron
 	p = "р",  -- Cyrillic Small Letter Er
 	q = "ԛ",  -- Cyrillic Small Letter Qa
 	r = "г",  -- Cyrillic Small Letter Ge
 	s = "ѕ",  -- Cyrillic Small Letter Dze
 	t = "τ",  -- Greek Small Letter Tau
-	u = "ս",  -- Armenian Small Letter Se
+	u = "υ",  -- Armenian Small Letter Se
 	v = "ѵ",  -- Cyrillic Small Letter Izhitsa
 	w = "ѡ",  -- Cyrillic Small Letter Omega
 	x = "х",  -- Cyrillic Small Letter Ha
@@ -180,6 +184,12 @@ local CurrentState = DefaultState
 local LaggingServer = false
 local TimeRefresh = math.huge
 local ServerLagRatio = 6
+
+RayPartBullet.BrickColor = BrickColor.new("Cyan")
+RayPartBullet.Material = Enum.Material.Neon
+RayPartBullet.Transparency = .5
+RayPartBullet.CanCollide = false
+RayPartBullet.Anchored = true
 
 coroutine.wrap(function()
 	task.wait(12)
@@ -246,17 +256,179 @@ local parser = Parser.new(vm)
 -- Import basic commands
 loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/stdcmds.lua"), true)()(vm)
 
-function Chat(msg, bypass, channel)
+function Chat(msg, bigtext, channel)
 	local OutMsg = msg
 
-	if bypass then
+	if bigtext then
 		OutMsg = ""
 		for Start, End in utf8.graphemes(msg) do
-			OutMsg = OutMsg..(Bypass[msg:sub(Start, End)] or msg:sub(Start, End)).."\226\128\138"
+			OutMsg = OutMsg..msg:sub(Start, End)..if End - Start < 2 then "̲" else ""
 		end
 	end
 
 	SayMessage:FireServer(OutMsg, channel or "All")
+end
+
+function CreateDummy(Size)
+	local Character = Instance.new("Model")
+	local Humanoid = Instance.new("Humanoid")
+	local Animator = Instance.new("Animator")
+	local Head = Instance.new("Part")
+	local RightArm = Instance.new("Part")
+	local LeftArm = Instance.new("Part")
+	local Torso = Instance.new("Part")
+	local HumanoidRootPart = Instance.new("Part")
+	local RightLeg = Instance.new("Part")
+	local LeftLeg = Instance.new("Part")
+	local RootJoint = Instance.new("Motor6D")
+	local Neck = Instance.new("Motor6D")
+	local RightShoulder = Instance.new("Motor6D")
+	local LeftShoulder = Instance.new("Motor6D")
+	local RightHip = Instance.new("Motor6D")
+	local LeftHip = Instance.new("Motor6D")
+
+	Character.Name = HttpService:GenerateGUID()
+
+	Humanoid.RigType = Enum.HumanoidRigType.R6
+	Humanoid.HipHeight = 1
+
+	Animator.Parent = Humanoid
+
+	Head.Name = "Head"
+	Head.Position = Vector3.new(0, 1.5 * Size, 0)
+	Head.Size = Vector3.one * Size
+	Head.Transparency = 1
+	Head.Parent = Character
+
+	RightArm.Name = "Right Arm"
+	RightArm.Position = Vector3.new(1.5 * Size, 0, 0)
+	RightArm.Size = Vector3.new(1, 2, 1) * Size
+	RightArm.Transparency = 1
+	RightArm.Parent = Character
+
+	LeftArm.Name = "Left Arm"
+	LeftArm.Position = Vector3.new(-1.5 * Size, 0, 0)
+	LeftArm.Size = Vector3.new(1, 2, 1) * Size
+	LeftArm.Transparency = 1
+	LeftArm.Parent = Character
+
+	Torso.Name = "Torso"
+	Torso.Size = Vector3.new(2, 2, 1) * Size
+	Torso.Transparency = 1
+	Torso.Parent = Character
+
+	HumanoidRootPart.Name = "HumanoidRootPart"
+	HumanoidRootPart.Size = Vector3.new(2, 2, 1) * Size
+	HumanoidRootPart.Transparency = 1
+	HumanoidRootPart.Parent = Character
+	Character.PrimaryPart = HumanoidRootPart
+
+	RightLeg.Name = "Right Leg"
+	RightLeg.Position = Vector3.new(.5, -2, 0) * Size
+	RightLeg.Size = Vector3.new(1, 2, 1) * Size
+	RightLeg.Transparency = 1
+	RightLeg.Parent = Character
+
+	LeftLeg.Name = "Left Leg"
+	LeftLeg.Size = Vector3.new(1, 2, 1) * Size
+	LeftLeg.Transparency = 1
+	LeftLeg.Parent = Character
+
+	RootJoint.Name = "Root Joint"
+	RootJoint.Part0 = HumanoidRootPart
+	RootJoint.Part1 = Torso
+	RootJoint.Parent = HumanoidRootPart
+
+	Neck.Name = "Neck"
+	Neck.Part0 = Torso
+	Neck.Part1 = Head
+	Neck.C0 = CFrame.new(0, 1, 0)
+	Neck.C1 = CFrame.new(0, -.5, 0)
+	Neck.Parent = Torso
+
+	RightShoulder.Name = "Right Shoulder"
+	RightShoulder.Part0 = Torso
+	RightShoulder.Part1 = RightArm
+	RightShoulder.C0 = CFrame.new(1, 1, 0)
+	RightShoulder.C1 = CFrame.new(-.5, 1, 0)
+	RightShoulder.Parent = Torso
+
+	LeftShoulder.Name = "Left Shoulder"
+	LeftShoulder.Part0 = Torso
+	LeftShoulder.Part1 = LeftArm
+	LeftShoulder.C0 = CFrame.new(-1, 1, 0)
+	LeftShoulder.C1 = CFrame.new(.5, 1, 0)
+	LeftShoulder.Parent = Torso
+
+	RightHip.Name = "Right Hip"
+	RightHip.Part0 = Torso
+	RightHip.Part1 = RightLeg
+	RightHip.C0 = CFrame.new(1, -1, 0)
+	RightHip.C1 = CFrame.new(.5, 1, 0)
+	RightHip.Parent = Torso
+
+	LeftHip.Name = "Left Hip"
+	LeftHip.Part0 = Torso
+	LeftHip.Part1 = LeftLeg
+	LeftHip.C0 = CFrame.new(-1, -1, 0)
+	LeftHip.C1 = CFrame.new(-.5, 1, 0)
+	LeftHip.Parent = Torso
+
+	Humanoid.Parent = Character
+
+	return Character
+end
+
+function NpcRandomWalk(Humanoid)
+	Humanoid:Move(CFrame.Angles(0, RandGen:NextNumber(-math.pi, math.pi), 0).LookVector)
+	task.wait(.9)
+	Humanoid:Move(Vector3.zero)
+end
+
+function NpcSeatedAction(Humanoid)
+	task.wait(RandGen:NextNumber(0, 6))
+	Humanoid.Jump = true
+end
+
+function NpcDefaultAction(Humanoid)
+	NpcRandomWalk(Humanoid)
+end
+
+function NpcRandomAction(Humanoid)
+	local State = Humanoid:GetState()
+
+	if State == Enum.HumanoidStateType.Dead then
+		return RunService.PostSimulation:Wait()
+	end
+
+	if State == Enum.HumanoidStateType.Seated then
+		return NpcSeatedAction(Humanoid)
+	end
+
+	NpcDefaultAction(Humanoid)
+end
+
+function NpcDefaultBehavior(Humanoid)
+	local Character = Humanoid.Parent
+	for _, Part in ipairs(Character:GetChildren()) do
+		if Part:IsA("BasePart") then
+			Part.Touched:Connect(function(Hit)
+				if Hit.Name == BulletName then
+					Humanoid:TakeDamage(9)
+					Hit.CanTouch = false
+				end
+			end)
+		end
+	end
+end
+
+function JeffTheKillerStep(Humanoid)
+	local Closest = 300
+	local TargetRoot = nil
+	local TargetHum = nil
+
+	for _, player in ipairs(Players:GetPlayers()) do
+	end
 end
 
 function WaitFirst(...)
@@ -605,25 +777,37 @@ function Draw3D(Data)
 		DrawingBullets = true
 		coroutine.wrap(function()
 			while true do
-				while GetToolInBackpack(AkName) == nil do
-					GetItem(AkName)
+				while GetToolInBackpack(DrawCurrGun) == nil do
+					GetItem(DrawCurrGun)
 				end
 
-				local Ak = GetToolInBackpack(AkName)
+				local Gun = GetToolInBackpack(DrawCurrGun)
 
-				for _, Connection in pairs(getconnections(ReplicateBullets.OnClientEvent)) do
-					Connection:Fire(DrawingQueue)
+				for _, Bullet in ipairs(DrawingQueue) do
+					if Bullet.Cframe and Bullet.Distance then
+						local RayPart = RayPartBullet:Clone()
+						RayPart.CFrame = Bullet.Cframe
+						RayPart.Size = Vector3.new(.12, .12, Bullet.Distance)
+						RayPart.Parent = workspace.Terrain
+					end
 				end
-				ShootEvent:FireServer(DrawingQueue, Ak)
+				ShootEvent:FireServer(DrawingQueue, Gun)
 
 				-- Prevent lagging the server
-				if NumDraws % 24 == 3 then
-					ReloadEvent:FireServer(Ak)
+				if NumDraws % 15 == 14 then
+					ReloadEvent:FireServer(Gun)
+					if DrawCurrGun == PistolName then
+						DrawCurrGun = AkName
+					else
+						DrawCurrGun = PistolName
+					end
 				end
 
 				NumDraws += 1
 				table.clear(DrawingQueue)
 				task.wait(DrawYield)
+
+				workspace.Terrain:ClearAllChildren()
 
 				if #DrawingQueue == 0 then
 					DrawingBullets = false
@@ -717,6 +901,20 @@ function Draw3DBullet(From, To, Hit)
 			Hit = Hit
 		}
 	}
+end
+
+function Draw3DOutlineCharacter(Character)
+	local Out = {}
+
+	for _, Part in ipairs(Character:GetChildren()) do
+		if Part:IsA("BasePart") and Part.Name ~= "HumanoidRootPart" then
+			for _, Bullet in ipairs(Draw3DGenerateBlock(Part.CFrame, Part.Size)) do
+				table.insert(Out, Bullet)
+			end
+		end
+	end
+
+	return Out
 end
 
 function HasLethalTools(player)
@@ -1401,12 +1599,32 @@ function Spam()
 	SpamEnabled = true
 
 	if SpamSentences == nil then
-		SpamSentences = loadstring(game:HttpGet("https://raw.githubusercontent.com/BoneiroTheCat/the-adventure-of-scriptie/main/lua/sentences.lua"), true)()
+		SpamSentences = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
+	end
+
+	if Drawings == nil then
+		Drawings = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/drawings.json"))
 	end
 
 	repeat
-		task.wait(1.8)
+		if RandGen:NextInteger(0, 9) == 0 then
+			task.wait(15)
+			if not SpamEnabled then
+				break
+			end
+
+			local Drawing = Drawings[RandGen:NextNumber(1, #Drawings)]
+
+			for _, Line in ipairs(Drawing) do
+				Chat(Line)
+				task.wait()
+			end
+
+			continue
+		end
+
 		Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true)
+		task.wait(2.1)
 	until not SpamEnabled
 end
 
@@ -1512,31 +1730,18 @@ function UntouchFling()
 end
 
 function FreezeServer()
-	if FreezingServer then
-		return
-	end
-	FreezingServer = true
-
 	NetworkClient:SetOutgoingKBPSLimit(999999999)
-	repeat
-		while GetToolInBackpack(AkName) == nil do
-			GetItem(AkName)
-		end
-		local Ak = GetToolInBackpack(AkName)
-		local Punch = GetCharLimb("Head") and GetCharLimb("Head"):FindFirstChild("punchSound")
-		for i = 3, 333 do
-			if Punch then
-				SoundEvent:FireServer(Punch)
-			end
-			ShootEvent:FireServer({}, Ak)
-			ReloadEvent:FireServer(Ak)
-		end
-		RunService.PostSimulation:Wait()
-	until not FreezingServer
-end
+	
+	while GetToolInBackpack(AkName) == nil do
+		GetItem(AkName)
+	end
 
-function UnfreezeServer()
-	FreezingServer = false
+	local Ak = GetToolInBackpack(AkName)
+
+	ReloadEvent:FireServer(Ak)
+	for i = 0, 9999 do
+		ShootEvent:FireServer({}, Ak)
+	end
 end
 
 function LagServer()
@@ -1641,12 +1846,16 @@ function CreateTurret(Name)
 	RangeDetector.CFrame = LocalRoot.CFrame
 	RangeDetector.Parent = workspace
 
-	Turrets[Name] = RangeDetector
+	Turrets[Name or RangeDetector.Name] = {
+		RangeDetector,
+		os.clock(),
+		0
+	}
 end
 
 function RemoveTurret(Name)
 	if Turrets[Name] then
-		Turrets[Name]:Destroy()
+		Turrets[Name][1]:Destroy()
 		Turrets[Name] = nil
 	end
 end
@@ -1657,14 +1866,87 @@ function RemoveTurrets()
 	end
 end
 
+function CreateNpc(Size, Name)
+	RemoveNpc(Name)
+
+	Name = Name or HttpService:GenerateGUID()
+
+	local Character = CreateDummy(Size or 1)
+	local Humanoid = Character.Humanoid
+
+	Npcs[Name] = {
+		Character
+	}
+
+	Character.Parent = workspace
+	Character:PivotTo(LocalRoot.CFrame * CFrame.new(0, 5, 0))
+
+	Humanoid.Died:Once(function()
+		task.wait(3)
+		RemoveNpc(Name)
+	end)
+
+	NpcDefaultBehavior(Humanoid)
+	while Character.Parent == workspace do
+		task.wait(.9)
+		NpcRandomAction(Humanoid)
+	end
+end
+
+function RemoveNpc(Name)
+	if Npcs[Name] == nil then
+		return
+	end
+
+	Npcs[Name][1]:Destroy()
+	Npcs[Name] = nil
+end
+
+function RemoveNpcs()
+	for NpcName in pairs(Npcs) do
+		RemoveNpc(NpcName)
+	end
+end
+
+function AntiLag()
+	for _, Connection in pairs(getconnections(ReplicateBullets.OnClientEvent)) do
+		Connection:Disable()
+	end
+	for _, Connection in pairs(getconnections(SoundEvent.OnClientEvent)) do
+		Connection:Disable()
+	end
+end
+
+function UnantiLag()
+	for _, Connection in pairs(getconnections(ReplicateBullets.OnClientEvent)) do
+		Connection:Enable()
+	end
+	for _, Connection in pairs(getconnections(SoundEvent.OnClientEvent)) do
+		Connection:Enable()
+	end
+end
+
+function SetDrawTime(NewTime)
+	if typeof(NewTime) == "number" then
+		NewTime = math.clamp(NewTime, .09, 6)
+		DrawYield = NewTime
+	end
+end
+
 coroutine.wrap(function()
 	while task.wait(DrawYield) do
 		for _, Turret in pairs(Turrets) do
-			local ShootStart = Turret.CFrame * CFrame.new(0, 3.75, 0)
-			Draw3D(Draw3DGenerateBlock(Turret.CFrame, Vector3.new(3, 5, 3)))
+			local ShootStart = Turret[1].CFrame * CFrame.new(0, 3.75, 0)
+			local Delta = os.clock() - Turret[2]
+			Turret[2] = os.clock()
+			Turret[3] += Delta
+
+			Draw3D(Draw3DGenerateBlock(Turret[1].CFrame, Vector3.new(3, 5, 3)))
 			Draw3D(Draw3DGenerateBlock(ShootStart, Vector3.new(2, 2.5, 2)))
-			if true or NumDraws % 2 == 0 then
-				for _, Part in ipairs(workspace:GetPartsInPart(Turret)) do
+
+			while Turret[3] > .9 do
+				Turret[3] -= .9
+				for _, Part in ipairs(workspace:GetPartsInPart(Turret[1])) do
 					if Part.Name ~= "Torso" then
 						continue
 					end
@@ -1690,6 +1972,10 @@ coroutine.wrap(function()
 					end
 				end
 			end
+		end
+
+		for Name, Npc in pairs(Npcs) do
+			Draw3D(Draw3DOutlineCharacter(Npc[1]))
 		end
 	end
 end)()
@@ -2006,11 +2292,6 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-	name = "unfreezeserver",
-	callback = UnfreezeServer
-})
-
-vm:CreateCommand({
 	name = "lagspikes",
 	callback = LagServer
 })
@@ -2058,6 +2339,54 @@ vm:CreateCommand({
 vm:CreateCommand({
 	name = "removeturrets",
 	callback = RemoveTurrets
+})
+
+vm:CreateCommand({
+    name = "antilag",
+    callback = AntiLag
+})
+
+vm:CreateCommand({
+    name = "unantilag",
+    callback = UnantiLag
+})
+
+vm:CreateCommand({
+    name = "npc",
+    callback = CreateNpc,
+    args = {
+        {
+            name = "size"
+        },
+		{
+			name = "name"
+		}
+    }
+})
+
+vm:CreateCommand({
+    name = "removenpc",
+    callback = RemoveNpc,
+    args = {
+        {
+            name = "name"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "removenpcs",
+    callback = RemoveNpcs
+})
+
+vm:CreateCommand({
+    name = "drawtime",
+    callback = SetDrawTime,
+    args = {
+        {
+            name = "newdrawtime"
+        }
+    }
 })
 
 Player.Chatted:Connect(function(msg)
