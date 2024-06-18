@@ -57,6 +57,7 @@ local Turrets = {}
 local LocalCharacter = nil
 local LocalHumanoid = nil
 local LocalRoot = nil
+local CopyTeamEv = nil
 local AntikillEnabled = false
 local AntiarrestEnabled = false
 local InvisibleEnabled = false
@@ -1960,6 +1961,25 @@ function ChatBypass(msg)
 	Chat(Bypass(msg))
 end
 
+function CopyTeam(player)
+	SwitchToTeam(player.Team)
+end
+
+function LoopCopyTeam(player)
+	UnloopCopyTeam()
+	CopyTeam(player)
+	CopyTeamEv = player:GetPropertyChangedSignal("TeamColor"):Connect(function()
+		CopyTeam(player)
+	end)
+end
+
+function UnloopCopyTeam()
+	if CopyTeamEv == nil or not CopyTeamEv.Connected then
+		return
+	end
+	CopyTeamEv:Disconnect()
+end
+
 coroutine.wrap(function()
 	while task.wait(DrawYield) do
 		for _, Turret in pairs(Turrets) do
@@ -2419,6 +2439,31 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "bypass",
     callback = ChatBypass
+})
+
+vm:CreateCommand({
+    name = "copyteam",
+    callback = CopyTeam,
+    args = {
+        {
+            name = "player"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "loopcopyteam",
+    callback = LoopCopyTeam,
+    args = {
+        {
+            name = "player"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "unloopcopyteam",
+    callback = UnloopCopyTeam
 })
 
 Player.Chatted:Connect(function(msg)
