@@ -2010,8 +2010,11 @@ function BringAllItems()
 		if Item:FindFirstChild("ITEMPICKUP") == nil or Item.ITEMPICKUP.Anchored or Item.ITEMPICKUP:IsGrounded() then
 			continue
 		end
+		for i = 0, 30 do
 		Item.ITEMPICKUP.AssemblyRootPart.Velocity = Vector3.zero
 		Item.ITEMPICKUP.AssemblyRootPart.CFrame = LocalRoot.CFrame
+		task.wait()
+		end
 	end
 end
 
