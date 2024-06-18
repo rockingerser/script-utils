@@ -126,32 +126,64 @@ local DefaultState = {
 	cframe = nil,
 	team = Inmates
 }
+
+
 local LookAlikes = {
-    [" "] = " ", ["!"] = "！", ["\""] = "＂", ["$"] = "＄",
-    ["%"] = "％", ["&"] = "＆", ["'"] = "ˈ", ["("] = "（",
-    [")"] = "）", ["*"] = "⁎", ["+"] = "＋", [","] = "‚",
-    ["-"] = "‐", ["."] = "․", ["/"] = "⁄", ["0"] = "O",
-    ["1"] = "𝟷", ["2"] = "𝟸", ["3"] = "Ꝫ", ["4"] = "４",
-    ["5"] = "𝟻", ["6"] = "𝟨", ["7"] = "𝟽", ["8"] = "𝟪",
-    ["9"] = "𝟫", [":"] = "∶", [";"] = ";", ["<"] = "𝈶",
-    ["="] = "᐀", [">"] = "𖼿", ["?"] = "ꛫ", ["@"] = "＠",
-    ["["] = "［", ["\\"] = "﹨", ["]"] = "］", ["_"] = "ߺ",
-    ["`"] = "`", ["a"] = "а", ["b"] = "ᖯ", ["c"] = "ⅽ",
-    ["d"] = "𝚍", ["e"] = "е", ["f"] = "𝖿", ["g"] = "𝗀",
-    ["h"] = "հ", ["i"] = "і", ["j"] = "ј", ["k"] = "𝚔",
-    ["l"] = "ⅼ", ["m"] = "ｍ", ["n"] = "𝗇", ["o"] = "о",
-    ["p"] = "р", ["q"] = "q", ["r"] = "𝗋", ["s"] = "𐑈",
-    ["t"] = "𝚝", ["u"] = "ս", ["v"] = "∨", ["w"] = "ԝ",
-    ["x"] = "ⅹ", ["y"] = "у", ["z"] = "𝗓", ["A"] = "𐊠",
-    ["B"] = "В", ["C"] = "𐊢", ["D"] = "ꓓ", ["E"] = "Е",
-    ["F"] = "𐊇", ["G"] = "Ԍ", ["H"] = "Η", ["I"] = "І",
-    ["J"] = "Ј", ["K"] = "Κ", ["L"] = "Ⅼ", ["M"] = "Μ",
-    ["N"] = "Ν", ["O"] = "Ο", ["P"] = "Ρ", ["Q"] = "𝖰",
-    ["R"] = "𖼵", ["S"] = "Ѕ", ["T"] = "Τ", ["U"] = "𐓎",
-    ["V"] = "ⴸ", ["W"] = "Ԝ", ["X"] = "Χ", ["Y"] = "Υ",
-    ["Z"] = "Ζ", ["{"] = "｛", ["|"] = "ا", ["}"] = "｝",
-    ["~"] = "∼"
+	A = "Α",  -- Greek Capital Letter Alpha
+	B = "Β",  -- Greek Capital Letter Beta
+	C = "Ϲ",  -- Greek Letter Lunate Sigma
+	D = "Ԁ",  -- Cyrillic Capital Letter Komi De
+	E = "Ε",  -- Greek Capital Letter Epsilon
+	F = "Ϝ",  -- Greek Capital Letter Digamma
+	G = "Ԍ",  -- Cyrillic Capital Letter Gje
+	H = "Η",  -- Greek Capital Letter Eta
+	I = "Ι",  -- Greek Capital Letter Iota
+	J = "Ј",  -- Cyrillic Capital Letter Je
+	K = "Κ",  -- Greek Capital Letter Kappa
+	L = "Ꮮ",  -- Canadian Syllabics La
+	M = "Μ",  -- Greek Capital Letter Mu
+	N = "Ν",  -- Greek Capital Letter Nu
+	O = "Ο",  -- Greek Capital Letter Omicron
+	P = "Ρ",  -- Greek Capital Letter Rho
+	Q = "Ϙ",  -- Greek Letter Koppa
+	R = "Ꭱ",  -- Cherokee Letter E
+	S = "Ѕ",  -- Cyrillic Capital Letter Dze
+	T = "Τ",  -- Greek Capital Letter Tau
+	U = "Ս",  -- Armenian Capital Letter Se
+	V = "Ѵ",  -- Cyrillic Capital Letter Izhitsa
+	W = "Ԝ",  -- Cyrillic Capital Letter We
+	X = "Χ",  -- Greek Capital Letter Chi
+	Y = "Υ",  -- Greek Capital Letter Upsilon
+	Z = "Ζ",  -- Greek Capital Letter Zeta
+
+	a = "ɑ",  -- Latin Small Letter Alpha
+	b = "Ь",  -- Cyrillic Small Letter Soft Sign
+	c = "ϲ",  -- Greek Small Letter Lunate Sigma
+	d = "ԁ",  -- Cyrillic Small Letter Komi De
+	e = "е",  -- Cyrillic Small Letter E
+	f = "ғ",  -- Cyrillic Small Letter Gha
+	g = "ɡ",  -- Armenian Small Letter Co
+	h = "һ",  -- Cyrillic Small Letter Shha
+	i = "і",  -- Cyrillic Small Letter Byelorussian-Ukrainian I
+	j = "ϳ",  -- Greek Small Letter Iota Subscript
+	k = "κ",  -- Greek Small Letter Kappa
+	l = "I", -- Roman Numeral Fifty
+	m = "м",  -- Cyrillic Small Letter Em
+	n = "ɴ",  -- Armenian Small Letter Vo
+	o = "ο",  -- Greek Small Letter Omicron
+	p = "р",  -- Cyrillic Small Letter Er
+	q = "ԛ",  -- Cyrillic Small Letter Qa
+	r = "г",  -- Cyrillic Small Letter Ge
+	s = "ѕ",  -- Cyrillic Small Letter Dze
+	t = "τ",  -- Greek Small Letter Tau
+	u = "υ",  -- Armenian Small Letter Se
+	v = "ѵ",  -- Cyrillic Small Letter Izhitsa
+	w = "ѡ",  -- Cyrillic Small Letter Omega
+	x = "х",  -- Cyrillic Small Letter Ha
+	y = "у",  -- Cyrillic Small Letter U
+	z = "ᴢ"   -- Latin Letter Small Capital
 }
+
 local CurrentState = DefaultState
 local LaggingServer = false
 local TimeRefresh = math.huge
