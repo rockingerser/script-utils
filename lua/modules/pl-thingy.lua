@@ -99,6 +99,7 @@ local DrawYield = .24
 local CarSpawners = {}
 local SpamSounds = {}
 local Npcs = {}
+local SpamDrawings = nil
 local NumDraws = 0
 local DrawingBullets = false
 local JailLocations = {
@@ -266,7 +267,7 @@ function Chat(msg, bigtext, channel)
 		end
 	end
 
-	SayMessage:FireServer(OutMsg, channel or "All")
+	SayMessage:FireServer(if typeof(channel) == "Instance" and channel:IsA("Player") then "/w "..channel.Name.." "..OutMsg else OutMsg, if typeof(channel) == "string" then channel else "All")
 end
 
 function CreateDummy(Size)
@@ -1602,28 +1603,31 @@ function Spam()
 		SpamSentences = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/sentences.json"))
 	end
 
-	if Drawings == nil then
-		Drawings = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/drawings.json"))
+	if SpamDrawings == nil then
+		SpamDrawings = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/drawings.json"))
 	end
 
 	repeat
+		local players = Players:GetPlayers()
+		local player = players[RandGen:NextInteger(1, #players)]
+
 		if RandGen:NextInteger(0, 9) == 0 then
 			task.wait(15)
 			if not SpamEnabled then
 				break
 			end
 
-			local Drawing = Drawings[RandGen:NextNumber(1, #Drawings)]
+			local Drawing = SpamDrawings[RandGen:NextNumber(1, #SpamDrawings)]
 
 			for _, Line in ipairs(Drawing) do
-				Chat(Line)
+				Chat(Line, false, player)
 				task.wait()
 			end
 
 			continue
 		end
 
-		Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true)
+		Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true, player)
 		task.wait(2.1)
 	until not SpamEnabled
 end
