@@ -964,6 +964,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
+		print(Sound:FindFirstAncestorOfClass("Tool"))
 		if Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
 			local SoundArg = {
 				Sound,
@@ -1848,7 +1849,7 @@ function AnnoyingSounds()
 		SoundNum += 1
 
 		if SoundNum % 60 == 3 then
-			task.wait(.12)
+			task.wait(.09)
 		end
 	until not SpammingSounds
 end
