@@ -1607,6 +1607,8 @@ function Spam()
 		SpamDrawings = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/drawings.json"))
 	end
 
+
+
 	repeat
 		local players = Players:GetPlayers()
 		local player = players[RandGen:NextInteger(1, #players)]
@@ -1617,7 +1619,7 @@ function Spam()
 				break
 			end
 
-			local Drawing = SpamDrawings[RandGen:NextNumber(1, #SpamDrawings)]
+			local Drawing = SpamDrawings[RandGen:NextInteger(1, #SpamDrawings)]
 
 			for _, Line in ipairs(Drawing) do
 				Chat(Line, false, player)
