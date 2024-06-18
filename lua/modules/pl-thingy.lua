@@ -263,7 +263,7 @@ function Bypass(text)
 	local out = ""
 	for Start, End in utf8.graphemes(text) do
 		local Char = text:sub(Start, End)
-		out = out..if LookAlikes[Char] then LookAlikes[Char] else Char
+		out = out..(if LookAlikes[Char] then LookAlikes[Char] else Char)
 	end
 	return out
 end
@@ -1957,7 +1957,7 @@ function SetDrawTime(NewTime)
 end
 
 function ChatBypass(msg)
-	Chat(Bypass(msg), true)
+	Chat(Bypass(msg))
 end
 
 coroutine.wrap(function()
