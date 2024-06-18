@@ -1848,7 +1848,7 @@ function AnnoyingSounds()
 		SoundNum += 1
 
 		if SoundNum % 30 == 3 then
-			RunService.PostSimulation:Wait()
+			task.wait(.12)
 		end
 	until not SpammingSounds
 end
