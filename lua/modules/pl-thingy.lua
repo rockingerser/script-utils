@@ -1985,6 +1985,30 @@ function UnloopCopyTeam()
 	CopyTeamEv:Disconnect()
 end
 
+function NetOwner()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player == Player then
+			sethiddenproperty(player, "MaxSimulationRadius", 1000)
+			sethiddenproperty(player, "SimulationRadius", 1000)
+			continue
+		end
+
+		sethiddenproperty(player, "MaxSimulationRadius", 0)
+		sethiddenproperty(player, "MaxSimulationRadius", 0)
+	end
+end
+
+function BringAllItems()
+	NetOwner()
+	task.wait(.9)
+	for _, Item in ipairs(PrisonItems.single:GetChildren()) do
+		if Item:FindFirstChild("ITEMPICKUP") == nil or not isnetworkowner(Item.ITEMPICKUP) then
+			continue
+		end
+		Item.ITEMPICKUP.CFrame = LocalRoot.CFrame
+	end
+end
+
 coroutine.wrap(function()
 	while task.wait(DrawYield) do
 		for _, Turret in pairs(Turrets) do
@@ -2469,6 +2493,11 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "unloopcopyteam",
     callback = UnloopCopyTeam
+})
+
+vm:CreateCommand({
+    name = "bringitems",
+    callback = BringAllItems
 })
 
 Player.Chatted:Connect(function(msg)
