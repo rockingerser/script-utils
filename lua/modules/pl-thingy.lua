@@ -129,59 +129,58 @@ local DefaultState = {
 
 
 local LookAlikes = {
-	A = "Α",  -- Greek Capital Letter Alpha
-	B = "Β",  -- Greek Capital Letter Beta
-	C = "Ϲ",  -- Greek Letter Lunate Sigma
-	D = "Ԁ",  -- Cyrillic Capital Letter Komi De
-	E = "Ε",  -- Greek Capital Letter Epsilon
-	F = "Ϝ",  -- Greek Capital Letter Digamma
-	G = "Ԍ",  -- Cyrillic Capital Letter Gje
-	H = "Η",  -- Greek Capital Letter Eta
-	I = "Ι",  -- Greek Capital Letter Iota
-	J = "Ј",  -- Cyrillic Capital Letter Je
-	K = "Κ",  -- Greek Capital Letter Kappa
-	L = "Ꮮ",  -- Canadian Syllabics La
-	M = "Μ",  -- Greek Capital Letter Mu
-	N = "Ν",  -- Greek Capital Letter Nu
-	O = "Ο",  -- Greek Capital Letter Omicron
-	P = "Ρ",  -- Greek Capital Letter Rho
-	Q = "Ϙ",  -- Greek Letter Koppa
-	R = "Ꭱ",  -- Cherokee Letter E
-	S = "Ѕ",  -- Cyrillic Capital Letter Dze
-	T = "Τ",  -- Greek Capital Letter Tau
-	U = "Ս",  -- Armenian Capital Letter Se
-	V = "Ѵ",  -- Cyrillic Capital Letter Izhitsa
-	W = "Ԝ",  -- Cyrillic Capital Letter We
-	X = "Χ",  -- Greek Capital Letter Chi
-	Y = "Υ",  -- Greek Capital Letter Upsilon
-	Z = "Ζ",  -- Greek Capital Letter Zeta
-
-	a = "ɑ",  -- Latin Small Letter Alpha
-	b = "Ь",  -- Cyrillic Small Letter Soft Sign
-	c = "ϲ",  -- Greek Small Letter Lunate Sigma
-	d = "ԁ",  -- Cyrillic Small Letter Komi De
-	e = "е",  -- Cyrillic Small Letter E
-	f = "ғ",  -- Cyrillic Small Letter Gha
-	g = "ɡ",  -- Armenian Small Letter Co
-	h = "һ",  -- Cyrillic Small Letter Shha
-	i = "і",  -- Cyrillic Small Letter Byelorussian-Ukrainian I
-	j = "ϳ",  -- Greek Small Letter Iota Subscript
-	k = "κ",  -- Greek Small Letter Kappa
-	l = "I", -- Roman Numeral Fifty
-	m = "м",  -- Cyrillic Small Letter Em
-	n = "ɴ",  -- Armenian Small Letter Vo
-	o = "ο",  -- Greek Small Letter Omicron
-	p = "р",  -- Cyrillic Small Letter Er
-	q = "ԛ",  -- Cyrillic Small Letter Qa
-	r = "г",  -- Cyrillic Small Letter Ge
-	s = "ѕ",  -- Cyrillic Small Letter Dze
-	t = "τ",  -- Greek Small Letter Tau
-	u = "υ",  -- Armenian Small Letter Se
-	v = "ѵ",  -- Cyrillic Small Letter Izhitsa
-	w = "ѡ",  -- Cyrillic Small Letter Omega
-	x = "х",  -- Cyrillic Small Letter Ha
-	y = "у",  -- Cyrillic Small Letter U
-	z = "ᴢ"   -- Latin Letter Small Capital
+	A = "Α",
+	B = "Β",
+	C = "Ϲ",
+	D = "Ԁ",
+	E = "Ε",
+	F = "Ϝ",
+	G = "Ԍ",
+	H = "Η",
+	I = "Ι",
+	J = "Ј",
+	K = "Κ",
+	L = "Ꮮ",
+	M = "Μ",
+	N = "Ν",
+	O = "Ο",
+	P = "Ρ",
+	Q = "Ϙ",
+	R = "Ꭱ",
+	S = "Ѕ",
+	T = "Τ",
+	U = "Ս",
+	V = "Ѵ",
+	W = "Ԝ",
+	X = "Χ",
+	Y = "Υ",
+	Z = "Ζ",
+	a = "ɑ",
+	b = "Ь",
+	c = "ϲ",
+	d = "ԁ",
+	e = "е",
+	f = "ғ",
+	g = "ɡ",
+	h = "һ",
+	i = "і",
+	j = "ϳ",
+	k = "κ",
+	l = "I",
+	m = "м",
+	n = "ɴ",
+	o = "ο",
+	p = "р",
+	q = "ԛ",
+	r = "г",
+	s = "ѕ",
+	t = "τ",
+	u = "υ",
+	v = "ѵ",
+	w = "ѡ",
+	x = "х",
+	y = "у",
+	z = "ᴢ"
 }
 
 local CurrentState = DefaultState
@@ -1957,6 +1956,10 @@ function SetDrawTime(NewTime)
 	end
 end
 
+function ChatBypass(msg)
+	Chat(Bypass(msg), true)
+end
+
 coroutine.wrap(function()
 	while task.wait(DrawYield) do
 		for _, Turret in pairs(Turrets) do
@@ -2411,6 +2414,11 @@ vm:CreateCommand({
             name = "newdrawtime"
         }
     }
+})
+
+vm:CreateCommand({
+    name = "bypass",
+    callback = ChatBypass
 })
 
 Player.Chatted:Connect(function(msg)
