@@ -1986,6 +1986,9 @@ function UnloopCopyTeam()
 end
 
 function NetOwner()
+	coroutine.wrap(function()
+		for i = 0, 30 do
+			task.wait()
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player == Player then
 			sethiddenproperty(player, "MaxSimulationRadius", 1000)
@@ -1996,6 +1999,8 @@ function NetOwner()
 		sethiddenproperty(player, "MaxSimulationRadius", .01)
 		sethiddenproperty(player, "MaxSimulationRadius", .01)
 	end
+end
+end)()
 end
 
 function BringAllItems()
