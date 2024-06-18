@@ -208,7 +208,7 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 end
 
 for _, Door in ipairs(Doors:GetChildren()) do
-	table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
+	--table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
