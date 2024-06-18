@@ -1993,8 +1993,8 @@ function NetOwner()
 			continue
 		end
 
-		sethiddenproperty(player, "MaxSimulationRadius", 0)
-		sethiddenproperty(player, "MaxSimulationRadius", 0)
+		sethiddenproperty(player, "MaxSimulationRadius", .01)
+		sethiddenproperty(player, "MaxSimulationRadius", .01)
 	end
 end
 
