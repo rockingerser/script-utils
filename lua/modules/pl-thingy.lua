@@ -2208,7 +2208,8 @@ function GetLandmine()
 			local TargetPl = Players:GetPlayerFromCharacter(Hit.Parent)
 			if TargetPl and TargetPl.Team ~= Player.Team then
 			    Explosion(Landmine.Position, 30)
-				table.remove(Landmines, table.find(Landmines, Landmine)):Destroy()
+				table.remove(Landmines, table.find(Landmines, Landmine))
+				Landmine:Destroy()
 			end
 		end)
 
@@ -2227,8 +2228,9 @@ function Unlandmine()
 end
 
 function RemoveLandmines()
-	for Key in ipairs(Landmines) do
-		table.remove(Landmines, Key):Destroy()
+	for Key, Landmine in ipairs(Landmines) do
+		table.remove(Landmines, Key)
+		Landmine:Destroy()
 	end
 end
 
