@@ -2543,11 +2543,6 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-    name = "bringitems",
-    callback = BringAllItems
-})
-
-vm:CreateCommand({
     name = "fly",
     callback = Fly,
     args = {
