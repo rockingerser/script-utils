@@ -2015,7 +2015,7 @@ function Fly(Speed)
 
 	FlyLinearVel.Name = HttpService:GenerateGUID()
 	FlyLinearVel.Attachment0 = FlyAttachment
-	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
 	FlyVecForce.Attachment0 = FlyAttachment
 	FlyVecForce.ApplyAtCenterOfMass = true
 	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
@@ -2029,9 +2029,10 @@ function Fly(Speed)
 
 	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
-		Root.CFrame = CFrame.new(Root.CFrame.Position) * (Camera.CFrame - Camera.CFrame.Position)
+		local YRot = Camera.CFrame:ToEulerAnglesYXZ()
+		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
 
-		FlyLinearVel.VectorVelocity = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection * FlySpeed)
+		FlyLinearVel.VectorVelocity = CFrame.Angles(0, YRot, 0):VectorToWorldSpace(Humanoid.MoveDirection * FlySpeed)
 		FlyVecForce.Force = Vector3.new(0, Root.AssemblyMass * workspace.Gravity,0)
 
 		Humanoid.PlatformStand = true
