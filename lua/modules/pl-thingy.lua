@@ -471,7 +471,7 @@ function Explosion(Position, Distance)
 		local TargetPl = InRange[i]
 		local Hit = nil
 
-		if TargetPl.Team ~= Player.Team then
+		if TargetPl and TargetPl.Team ~= Player.Team then
 			Hit = GetCharLimb("HumanoidRootPart", false, TargetPl)
 		end
 
@@ -2208,8 +2208,7 @@ function GetLandmine()
 			local TargetPl = Players:GetPlayerFromCharacter(Hit.Parent)
 			if TargetPl and TargetPl.Team ~= Player.Team then
 			    Explosion(Landmine.Position, 30)
-				table.remove(Landmines, table.find(Landmines, Landmine))
-				Landmine:Destroy()
+				table.remove(Landmines, table.find(Landmines, Landmine)):Destroy()
 			end
 		end)
 
@@ -2228,9 +2227,8 @@ function Unlandmine()
 end
 
 function RemoveLandmines()
-	for Key, Landmine in ipairs(Landmines) do
-		table.remove(Landmines, Key)
-		Landmine:Destroy()
+	for Key in ipairs(Landmines) do
+		table.remove(Landmines, Key):Destroy()
 	end
 end
 
