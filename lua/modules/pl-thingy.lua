@@ -106,9 +106,11 @@ local DrawYield = .24
 local CarSpawners = {}
 local SpamSounds = {}
 local Npcs = {}
+local Landmines = {}
 local SpamDrawings = nil
 local NumDraws = 0
 local DrawingBullets = false
+local LandmineEnabled = false
 local JailLocations = {
 	CFrame.new(-321, 84, 2046),
 	CFrame.new(711, 102, 2373)
@@ -133,8 +135,6 @@ local DefaultState = {
 	cframe = nil,
 	team = Inmates
 }
-
-
 local LookAlikes = {
 	A = "Α",
 	B = "Β",
@@ -189,7 +189,6 @@ local LookAlikes = {
 	y = "у",
 	z = "ᴢ"
 }
-
 local CurrentState = DefaultState
 local LaggingServer = false
 local TimeRefresh = math.huge
@@ -450,6 +449,42 @@ function JeffTheKillerStep(Humanoid)
 	end
 end
 
+function PlayersInRange(Position, Distance)
+	local players = {}
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		local Target = GetCharLimb("HumanoidRootPart", false, player)
+		if Target then
+			table.insert(players, player)
+		end
+	end
+end
+
+function Explosion(Position, Distance)
+	local InRange = PlayersInRange(Position, Distance)
+	local PosCframe = CFrame.new(Position)
+	local Size = Vector3.one * Distance / math.sqrt(2)
+
+	for i = 1, 25 do
+		local TargetPl = InRange[i]
+		local Hit = nil
+
+		if TargetPl.Team ~= Player.Team then
+			Hit = GetCharLimb("HumanoidRootPart", false, TargetPl)
+		end
+
+		Draw3D(Draw3DGenerateBlock(
+			PosCframe * CFrame.Angles(
+				RandGen:NextNumber(-math.pi, math.pi),
+				RandGen:NextNumber(-math.pi, math.pi),
+				RandGen:NextNumber(-math.pi, math.pi)
+			),
+			Size,
+			Hit
+		))
+	end
+end
+
 function WaitFirst(...)
 	local Event = Instance.new("BindableEvent")
 	local Events = {}
@@ -492,8 +527,6 @@ function SaveState()
 	
 	return CurrentState
 end
-
-
 
 function RestoreState(NoRespawn)
 	if CurrentState.team == Neutral or Player.Team == Neutral then
@@ -837,72 +870,80 @@ function Draw3D(Data)
 	end
 end
 
-function Draw3DGenerateBlock(Cframe, Size)
+function Draw3DGenerateBlock(Cframe, Size, Hit)
 	local HalfSize = Size / 2
 	return {
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.X,
-			Cframe = Cframe * CFrame.new(0, HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+			Cframe = Cframe * CFrame.new(0, HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.X,
-			Cframe = Cframe * CFrame.new(0, -HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+			Cframe = Cframe * CFrame.new(0, -HalfSize.Y, HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.X,
-			Cframe = Cframe * CFrame.new(0, HalfSize.Y, -HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
+			Cframe = Cframe * CFrame.new(0, HalfSize.Y, -HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.X,
-			Cframe = Cframe * CFrame.new(0, -HalfSize.Y, -HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0)
-		},
-		
-		{
-			RayObject = Ray.new(Vector3.zero, Vector3.zero),
-			Distance = Size.Z,
-			Cframe = Cframe * CFrame.new(HalfSize.X, HalfSize.Y, 0)
+			Cframe = Cframe * CFrame.new(0, -HalfSize.Y, -HalfSize.Z) * CFrame.Angles(0, math.pi / 2, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.Z,
-			Cframe = Cframe * CFrame.new(HalfSize.X, -HalfSize.Y, 0)
-		},
-
-		{
-			RayObject = Ray.new(Vector3.zero, Vector3.zero),
-			Distance = Size.Z,
-			Cframe = Cframe * CFrame.new(-HalfSize.X, HalfSize.Y, 0)
+			Cframe = Cframe * CFrame.new(HalfSize.X, HalfSize.Y, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.Z,
-			Cframe = Cframe * CFrame.new(-HalfSize.X, -HalfSize.Y, 0)
-		},
-
-		{
-			RayObject = Ray.new(Vector3.zero, Vector3.zero),
-			Distance = Size.Y,
-			Cframe = Cframe * CFrame.new(HalfSize.X, 0, HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+			Cframe = Cframe * CFrame.new(HalfSize.X, -HalfSize.Y, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
-			Distance = Size.Y,
-			Cframe = Cframe * CFrame.new(-HalfSize.X, 0, HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+			Distance = Size.Z,
+			Cframe = Cframe * CFrame.new(-HalfSize.X, HalfSize.Y, 0),
+			Hit = Hit
 		},
-
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
-			Distance = Size.Y,
-			Cframe = Cframe * CFrame.new(HalfSize.X, 0, -HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+			Distance = Size.Z,
+			Cframe = Cframe * CFrame.new(-HalfSize.X, -HalfSize.Y, 0),
+			Hit = Hit
 		},
 		{
 			RayObject = Ray.new(Vector3.zero, Vector3.zero),
 			Distance = Size.Y,
-			Cframe = Cframe * CFrame.new(-HalfSize.X, 0, -HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+			Cframe = Cframe * CFrame.new(HalfSize.X, 0, HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0),
+			Hit = Hit
+		},
+		{
+			RayObject = Ray.new(Vector3.zero, Vector3.zero),
+			Distance = Size.Y,
+			Cframe = Cframe * CFrame.new(-HalfSize.X, 0, HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0),
+			Hit = Hit
+		},
+		{
+			RayObject = Ray.new(Vector3.zero, Vector3.zero),
+			Distance = Size.Y,
+			Cframe = Cframe * CFrame.new(HalfSize.X, 0, -HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0),
+			Hit = Hit
+		},
+		{
+			RayObject = Ray.new(Vector3.zero, Vector3.zero),
+			Distance = Size.Y,
+			Cframe = Cframe * CFrame.new(-HalfSize.X, 0, -HalfSize.Z) * CFrame.Angles(math.pi / 2, 0, 0),
+			Hit = Hit
 		}
 	}
 end
@@ -970,7 +1011,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
+		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
 			local SoundArg = {
 				Sound,
 				Sound:FindFirstAncestorOfClass("Tool")
@@ -1008,6 +1049,7 @@ function CharacterAdded(NewCharacter)
 			KillPlayers(player)
 		end
 	end)
+
 	NoGunsCheck = Backpack.ChildAdded:Connect(function(Gun)
 		if table.find(Tools, Gun) == nil then
 			table.insert(Tools, Gun)
@@ -1045,6 +1087,10 @@ function CharacterAdded(NewCharacter)
 	LocalCharacter = NewCharacter
 	LocalHumanoid = Humanoid
 	LocalRoot = Root
+
+	if LandmineEnabled then
+		GetLandmine()
+	end
 
 	local SpoofServer = RunService.PostSimulation:Connect(function()
 		local SpoofsCurrent = Spoofs[1]
@@ -1633,8 +1679,6 @@ function Spam(PmSpam)
 		SpamDrawings = HttpService:JSONDecode(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/json/drawings.json"))
 	end
 
-
-
 	repeat
 		local players = Players:GetPlayers()
 		local player = if PmSpam then players[RandGen:NextInteger(1, #players)] else nil
@@ -2134,8 +2178,56 @@ coroutine.wrap(function()
 		for Name, Npc in pairs(Npcs) do
 			Draw3D(Draw3DOutlineCharacter(Npc[1]))
 		end
+
+		for _, Landmine in ipairs(Landmines) do
+			Draw3D(Draw3DGenerateBlock(Landmine.CFrame, Landmine.Size))
+		end
 	end
 end)()
+
+function GetLandmine()
+    local Tool = Instance.new("Tool")
+	local Handle = Instance.new("Part")
+
+	Tool.Name = "Landmine"
+	Handle.Name = "Handle"
+
+	Handle.Parent = Tool
+	Tool.Parent = Player.Backpack
+
+	Tool.Activated:Connect(function()
+	    local Landmine = Instance.new("Part")
+
+        Landmine.Name = HttpService:GenerateGUID()
+		Landmine.CFrame = Handle.CFrame
+		Landmine.Size = Vector3.new(3, .001, 3)
+		Landmine.Touched:Connect(function(Hit)
+			local TargetPl = Players:GetPlayerFromCharacter(Hit.Parent)
+			if TargetPl and TargetPl.Team ~= Player.Team then
+			    Explosion(Landmine.Position, 60)
+				table.remove(Landmines, table.find(Landmines, Landmine)):Destroy()
+			end
+		end)
+
+		table.insert(Landmines, Landmine)
+		Landmine.Parent = workspace
+	end)
+end
+
+function Landmine()
+	LandmineEnabled = true
+	GetLandmine()
+end
+
+function Unlandmine()
+	LandmineEnabled = false
+end
+
+function RemoveLandmines()
+	for Key in ipairs(Landmines) do
+		table.remove(Landmines, Key):Destroy()
+	end
+end
 
 Players.PlayerAdded:Connect(PlayerAdded)
 UserInputService.JumpRequest:Connect(function()
@@ -2599,6 +2691,21 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "unfly",
     callback = Unfly
+})
+
+vm:CreateCommand({
+    name = "landmine",
+    callback = Landmine
+})
+
+vm:CreateCommand({
+    name = "unlandmine",
+    callback = Unlandmine
+})
+
+vm:CreateCommand({
+    name = "removelandmines",
+    callback = RemoveLandmines
 })
 
 Player.Chatted:Connect(function(msg)
