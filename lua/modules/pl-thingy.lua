@@ -77,7 +77,7 @@ local TargetBillboardTextPlayer = nil
 local FlyLinearVel = nil
 local FlyVecForce = nil
 local FlyAttachment = nil
-local FlySpeed = 30
+local FlySpeed = 60
 local FlyBindName = HttpService:GenerateGUID()
 local BiggestNumber = 3e15
 local InvisiblePriority = 99
@@ -2030,15 +2030,23 @@ function Fly(Speed)
 	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
 		local MovVector = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection)
-		local LookVector = Camera.CFrame.LookVector
+		local BackVector = -Camera.CFrame.LookVector
 		local RightVector = Camera.CFrame.RightVector
+		local AssemblyMass = Root.AssemblyMass
+
+		-- Prevent auto-flinging yourself when seated on anchored seats
+		if Root:IsGrounded() then
+			AssemblyMass = 0
+		end
 
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
 
-		FlyLinearVel.VectorVelocity = (LookVector * MovVector.Z + RightVector * MovVector.X) * FlySpeed
-		FlyVecForce.Force = Vector3.new(0, Root.AssemblyMass * workspace.Gravity,0)
+		FlyLinearVel.VectorVelocity = (BackVector * MovVector.Z + RightVector * MovVector.X) * FlySpeed
+		FlyVecForce.Force = Vector3.new(0, AssemblyMass * workspace.Gravity, 0)
 
-		Humanoid.PlatformStand = true
+		if Humanoid.SeatPart == nil then
+			Humanoid.PlatformStand = true
+		end
 	end)
 
 	Player.CharacterAdded:Once(function()
