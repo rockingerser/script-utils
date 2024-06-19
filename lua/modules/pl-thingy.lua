@@ -77,6 +77,7 @@ local TargetBillboardTextPlayer = nil
 local FlyLinearVel = nil
 local FlyVecForce = nil
 local FlyAttachment = nil
+local FlyAttachment2 = nil
 local FlySpeed = 60
 local FlyBindName = HttpService:GenerateGUID()
 local BiggestNumber = 3e15
@@ -2010,22 +2011,26 @@ function Fly(Speed)
 	FlyLinearVel = Instance.new("LinearVelocity")
 	FlyVecForce = Instance.new("VectorForce")
 	FlyAttachment = Instance.new("Attachment")
+	FlyAttachment2 = Instance.new("Attachment")
+
 	local Root = GetCharLimb("HumanoidRootPart", true)
 	local Humanoid = GetCharLimb("Humanoid", true)
 
 	FlyLinearVel.Name = HttpService:GenerateGUID()
 	FlyLinearVel.Attachment0 = FlyAttachment
 	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
-	FlyVecForce.Attachment0 = FlyAttachment
+	FlyVecForce.Attachment0 = FlyAttachment2
 	FlyVecForce.ApplyAtCenterOfMass = true
 	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
 
 	FlyVecForce.Name = HttpService:GenerateGUID()
 	FlyAttachment.Name = HttpService:GenerateGUID()
+	FlyAttachment2.Name = HttpService:GenerateGUID()
 
 	FlyLinearVel.Parent = GetCharacter()
 	FlyVecForce.Parent = GetCharacter()
 	FlyAttachment.Parent = Root
+	FlyAttachment2.Parent = Root
 
 	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
@@ -2071,6 +2076,11 @@ function Unfly()
 	if FlyAttachment then
 		FlyAttachment:Destroy()
 		FlyAttachment = nil
+	end
+
+	if FlyAttachment2 then
+		FlyAttachment2:Destroy()
+		FlyAttachment2 = nil
 	end
 
 	RunService:UnbindFromRenderStep(FlyBindName)
