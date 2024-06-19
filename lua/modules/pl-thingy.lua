@@ -2201,12 +2201,13 @@ function GetLandmine()
 	    local Landmine = Instance.new("Part")
 
         Landmine.Name = HttpService:GenerateGUID()
+		Landmine.CustomPhysicalProperties = PhysicalProperties.new(100, 2, 0)
 		Landmine.CFrame = Handle.CFrame
 		Landmine.Size = Vector3.new(3, .001, 3)
 		Landmine.Touched:Connect(function(Hit)
 			local TargetPl = Players:GetPlayerFromCharacter(Hit.Parent)
 			if TargetPl and TargetPl.Team ~= Player.Team then
-			    Explosion(Landmine.Position, 60)
+			    Explosion(Landmine.Position, 30)
 				table.remove(Landmines, table.find(Landmines, Landmine)):Destroy()
 			end
 		end)
