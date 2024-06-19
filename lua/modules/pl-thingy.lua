@@ -454,7 +454,7 @@ function PlayersInRange(Position, Distance)
 
 	for _, player in ipairs(Players:GetPlayers()) do
 		local Target = GetCharLimb("HumanoidRootPart", false, player)
-		if Target then
+		if Target and (Target.Position - Position).Magnitude < Distance then
 			table.insert(players, player)
 		end
 	end
