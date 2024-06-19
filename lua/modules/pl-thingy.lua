@@ -355,36 +355,36 @@ function CreateDummy(Size)
 	Neck.Name = "Neck"
 	Neck.Part0 = Torso
 	Neck.Part1 = Head
-	Neck.C0 = CFrame.new(0, 1, 0)
-	Neck.C1 = CFrame.new(0, -.5, 0)
+	Neck.C0 = CFrame.new(0, Size, 0)
+	Neck.C1 = CFrame.new(0, -.5 * Size, 0)
 	Neck.Parent = Torso
 
 	RightShoulder.Name = "Right Shoulder"
 	RightShoulder.Part0 = Torso
 	RightShoulder.Part1 = RightArm
-	RightShoulder.C0 = CFrame.new(1, 1, 0)
-	RightShoulder.C1 = CFrame.new(-.5, 1, 0)
+	RightShoulder.C0 = CFrame.new(Size, Size, 0)
+	RightShoulder.C1 = CFrame.new(-.5 * Size, Size, 0)
 	RightShoulder.Parent = Torso
 
 	LeftShoulder.Name = "Left Shoulder"
 	LeftShoulder.Part0 = Torso
 	LeftShoulder.Part1 = LeftArm
-	LeftShoulder.C0 = CFrame.new(-1, 1, 0)
-	LeftShoulder.C1 = CFrame.new(.5, 1, 0)
+	LeftShoulder.C0 = CFrame.new(-Size, Size, 0)
+	LeftShoulder.C1 = CFrame.new(.5 * Size, Size, 0)
 	LeftShoulder.Parent = Torso
 
 	RightHip.Name = "Right Hip"
 	RightHip.Part0 = Torso
 	RightHip.Part1 = RightLeg
-	RightHip.C0 = CFrame.new(1, -1, 0)
-	RightHip.C1 = CFrame.new(.5, 1, 0)
+	RightHip.C0 = CFrame.new(Size, -Size, 0)
+	RightHip.C1 = CFrame.new(.5 * Size, Size, 0)
 	RightHip.Parent = Torso
 
 	LeftHip.Name = "Left Hip"
 	LeftHip.Part0 = Torso
 	LeftHip.Part1 = LeftLeg
-	LeftHip.C0 = CFrame.new(-1, -1, 0)
-	LeftHip.C1 = CFrame.new(-.5, 1, 0)
+	LeftHip.C0 = CFrame.new(-Size, -Size, 0)
+	LeftHip.C1 = CFrame.new(-.5 * Size, Size, 0)
 	LeftHip.Parent = Torso
 
 	Humanoid.Parent = Character
@@ -1986,9 +1986,6 @@ function UnloopCopyTeam()
 end
 
 function NetOwner()
-	coroutine.wrap(function()
-		for i = 0, 30 do
-			task.wait()
 	for _, player in ipairs(Players:GetPlayers()) do
 		if player == Player then
 			sethiddenproperty(player, "MaxSimulationRadius", 1000)
@@ -2000,21 +1997,58 @@ function NetOwner()
 		sethiddenproperty(player, "MaxSimulationRadius", .01)
 	end
 end
-end)()
+
+function Fly(Speed)
+	Unfly()
+	FlySpeed(Speed)
+
+	FlyLinearVel = Instance.new("LinearVelocity")
+	FlyAttachment = Instance.new("Attachment")
+	local Root = GetCharLimb("HumanoidRootPart", true)
+	local Humanoid = GetCharLimb("Humanoid", true)
+
+	FlyLinearVel.Name = HttpService:GenerateGUID()
+	FlyLinearVel.Attachment0 = FlyAttachment
+	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+
+	FlyAttachment.Name = HttpService:GenerateGUID()
+
+	FlyLinearVel.Parent = GetCharacter()
+	FlyAttachment.Parent = Root
+
+	RunService:BindToRenderStep(FlyBindName, 240, function()
+		local Camera = workspace.CurrentCamera
+		Root.CFrame = CFrame.new(Root.CFrame.Position) * (Camera.CFrame - Camera.CFrame.Position)
+		FlyLinearVel.VectorVelocity = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection * FlySpeed)
+		Humanoid.PlatformStand = true
+	end)
+
+	Player.CharacterAdded:Once(function()
+		if FlyLinearVel == nil then
+			return
+		end
+		Fly(FlySpeed)
+	end)
 end
 
-function BringAllItems()
-	NetOwner()
-	task.wait(.9)
-	for _, Item in ipairs(PrisonItems.single:GetChildren()) do
-		if Item:FindFirstChild("ITEMPICKUP") == nil or Item.ITEMPICKUP.Anchored or Item.ITEMPICKUP:IsGrounded() then
-			continue
-		end
-		for i = 0, 30 do
-		Item.ITEMPICKUP.AssemblyRootPart.Velocity = Vector3.zero
-		Item.ITEMPICKUP.AssemblyRootPart.CFrame = LocalRoot.CFrame
-		task.wait()
-		end
+function Unfly()
+	if FlyLinearVel then
+		FlyLinearVel:Destroy()
+		FlyLinearVel = nil
+	end
+
+	if FlyAttachment then
+		FlyAttachment:Destroy()
+		FlyAttachment = nil
+	end
+
+	RunService:UnbindFromRenderStep(FlyBindName)
+	LocalHumanoid.PlatformStand = false
+end
+
+function FlySpeed(NewSpeed)
+	if typeof(NewSpeed) == "number" then
+		FlySpeed = NewSpeed
 	end
 end
 
@@ -2507,6 +2541,31 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "bringitems",
     callback = BringAllItems
+})
+
+vm:CreateCommand({
+    name = "fly",
+    callback = Fly,
+    args = {
+        {
+            name = "speed"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "flyspeed",
+    callback = FlySpeed,
+    args = {
+        {
+            name = "speed"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "unfly",
+    callback = Unfly
 })
 
 Player.Chatted:Connect(function(msg)
