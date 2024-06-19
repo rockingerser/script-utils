@@ -2004,7 +2004,7 @@ end
 
 function Fly(Speed)
 	Unfly()
-	FlySpeed(Speed)
+	SetFlySpeed(Speed)
 
 	FlyLinearVel = Instance.new("LinearVelocity")
 	FlyAttachment = Instance.new("Attachment")
