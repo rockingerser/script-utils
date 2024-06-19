@@ -1969,7 +1969,7 @@ function SetDrawTime(NewTime)
 end
 
 function ChatBypass(msg)
-	Chat(Bypass(msg))
+	Chat(Bypass(msg), true)
 end
 
 function CopyTeam(player)
