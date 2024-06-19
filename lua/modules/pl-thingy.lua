@@ -75,6 +75,7 @@ local NeonTxtIns = nil
 local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
 local FlyLinearVel = nil
+local FlyVecForce = nil
 local FlyAttachment = nil
 local FlySpeed = 30
 local FlyBindName = HttpService:GenerateGUID()
@@ -2007,6 +2008,7 @@ function Fly(Speed)
 	SetFlySpeed(Speed)
 
 	FlyLinearVel = Instance.new("LinearVelocity")
+	FlyVecForce = Instance.new("VectorForce")
 	FlyAttachment = Instance.new("Attachment")
 	local Root = GetCharLimb("HumanoidRootPart", true)
 	local Humanoid = GetCharLimb("Humanoid", true)
@@ -2014,16 +2016,24 @@ function Fly(Speed)
 	FlyLinearVel.Name = HttpService:GenerateGUID()
 	FlyLinearVel.Attachment0 = FlyAttachment
 	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+	FlyVecForce.Attachment0 = FlyAttachment
+	FlyVecForce.ApplyAtCenterOfMass = true
+	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
 
+	FlyVecForce.Name = HttpService:GenerateGUID()
 	FlyAttachment.Name = HttpService:GenerateGUID()
 
 	FlyLinearVel.Parent = GetCharacter()
+	FlyVecForce.Parent = GetCharacter()
 	FlyAttachment.Parent = Root
 
 	RunService:BindToRenderStep(FlyBindName, 240, function()
 		local Camera = workspace.CurrentCamera
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * (Camera.CFrame - Camera.CFrame.Position)
+
 		FlyLinearVel.VectorVelocity = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection * FlySpeed)
+		FlyVecForce.Force = Vector3.new(0, Root.AssemblyMass * workspace.Gravity,0)
+
 		Humanoid.PlatformStand = true
 	end)
 
@@ -2039,6 +2049,11 @@ function Unfly()
 	if FlyLinearVel then
 		FlyLinearVel:Destroy()
 		FlyLinearVel = nil
+	end
+
+	if FlyVecForce then
+		FlyVecForce:Destroy()
+		FlyVecForce = nil
 	end
 
 	if FlyAttachment then
