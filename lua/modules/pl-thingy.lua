@@ -2027,7 +2027,7 @@ function Fly(Speed)
 	FlyVecForce.Parent = GetCharacter()
 	FlyAttachment.Parent = Root
 
-	RunService:BindToRenderStep(FlyBindName, 240, function()
+	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * (Camera.CFrame - Camera.CFrame.Position)
 
