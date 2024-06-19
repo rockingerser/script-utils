@@ -74,6 +74,10 @@ local Secret =  HttpService:GenerateGUID()
 local NeonTxtIns = nil
 local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
+local FlyLinearVel = nil
+local FlyAttachment = nil
+local FlySpeed = 30
+local FlyBindName = HttpService:GenerateGUID()
 local BiggestNumber = 3e15
 local InvisiblePriority = 99
 local InvisibleTouchFlingPriority = 150
@@ -2046,7 +2050,7 @@ function Unfly()
 	LocalHumanoid.PlatformStand = false
 end
 
-function FlySpeed(NewSpeed)
+function SetFlySpeed(NewSpeed)
 	if typeof(NewSpeed) == "number" then
 		FlySpeed = NewSpeed
 	end
@@ -2555,7 +2559,7 @@ vm:CreateCommand({
 
 vm:CreateCommand({
     name = "flyspeed",
-    callback = FlySpeed,
+    callback = SetFlySpeed,
     args = {
         {
             name = "speed"
