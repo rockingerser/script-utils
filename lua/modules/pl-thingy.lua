@@ -2029,10 +2029,13 @@ function Fly(Speed)
 
 	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
-		local YRot = Camera.CFrame:ToEulerAnglesYXZ()
+		local MovVector = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection)
+		local LookVector = Camera.CFrame.LookVector
+		local RightVector = Camera.CFrame.RightVector
+
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
 
-		FlyLinearVel.VectorVelocity = CFrame.Angles(0, YRot, 0):VectorToWorldSpace(Humanoid.MoveDirection * FlySpeed)
+		FlyLinearVel.VectorVelocity = (LookVector * MovVector.Z + RightVector * MovVector.X) * FlySpeed
 		FlyVecForce.Force = Vector3.new(0, Root.AssemblyMass * workspace.Gravity,0)
 
 		Humanoid.PlatformStand = true
