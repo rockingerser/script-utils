@@ -458,6 +458,8 @@ function PlayersInRange(Position, Distance)
 			table.insert(players, player)
 		end
 	end
+
+	return players
 end
 
 function Explosion(Position, Distance)
