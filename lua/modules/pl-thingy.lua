@@ -1655,11 +1655,8 @@ function Spam(PmSpam)
 			continue
 		end
 
-		for i = 0, 7 do
-			Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true, player)
-			task.wait(.6)
-		end
-		task.wait(15)
+		Chat(SpamSentences[RandGen:NextInteger(1, #SpamSentences)], true, player)
+		task.wait(2.13)
 	until not SpamEnabled
 end
 
