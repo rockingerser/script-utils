@@ -1639,7 +1639,7 @@ function Spam(PmSpam)
 		local players = Players:GetPlayers()
 		local player = if PmSpam then players[RandGen:NextInteger(1, #players)] else nil
 
-		if RandGen:NextInteger(0, 3) == 0 then
+		if RandGen:NextInteger(0, 21) == 0 then
 			task.wait(15)
 			if not SpamEnabled then
 				break
