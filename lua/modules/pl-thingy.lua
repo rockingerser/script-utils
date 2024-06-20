@@ -120,7 +120,8 @@ local TargetList = {
 	PendingNuke = {},
 	Oneshot = {},
 	NoGuns = {},
-	LoopKilling = {}
+	LoopKilling = {},
+	Outline = {}
 }
 local DefaultState = {
 	pistol = false,
@@ -2184,6 +2185,12 @@ coroutine.wrap(function()
 		for _, Landmine in ipairs(Landmines) do
 			Draw3D(Draw3DGenerateBlock(Landmine.CFrame, Landmine.Size))
 		end
+
+		for _, player in ipairs(GetPlayersFromTargetList(TargetList.Outline)) do
+			if player.Character then
+				Draw3D(Draw3DOutlineCharacter(player.Character))
+			end
+		end
 	end
 end)()
 
@@ -2230,6 +2237,14 @@ function RemoveLandmines()
 	while #Landmines > 0 do
 		table.remove(Landmines, 1):Destroy()
 	end
+end
+
+function OutlinePlayers(players)
+	Insert(TargetList.Outline, players)
+end
+
+function UnoutlinePlayers(players)
+	Remove(TargetList.Outline, players)
 end
 
 Players.PlayerAdded:Connect(PlayerAdded)
@@ -2709,6 +2724,26 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "removelandmines",
     callback = RemoveLandmines
+})
+
+vm:CreateCommand({
+    name = "outline",
+    callback = OutlinePlayers
+	args = {
+		{
+			name = "players"
+		}
+	}
+})
+
+vm:CreateCommand({
+    name = "unoutline",
+    callback = UnoutlinePlayers,
+    args = {
+        {
+            name = "players"
+        }
+    }
 })
 
 Player.Chatted:Connect(function(msg)
