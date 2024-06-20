@@ -138,7 +138,7 @@ function Parser:ParseArg()
     local parsed = nil
     if self.script:sub(self.i, self.i):find("[A-Za-z]") then
         local command = self:ParseCommand(self.i)
-        local cmdArgs = self:ParseArgs(command)
+        local cmdArgs = self:ParseArgs(command, true)
         parsed = self.VM.call(command.name, unpack(cmdArgs))
     else
         local init = self.i
@@ -155,7 +155,7 @@ function Parser:ParseArg()
     return parsed
 end
 
-function Parser:ParseArgs(forCommand)
+function Parser:ParseArgs(forCommand, Limit)
     local args = forCommand.args or {}
     local parsedArgs = {}
     local numParsedArgs = 0
@@ -163,9 +163,10 @@ function Parser:ParseArgs(forCommand)
     while true do
         while self.script:sub(self.i, self.i):find("%s") do
             self.i += 1
-        end
+        end 
 
-        if self.i > #self.script or self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix then
+        if self.i > #self.script or self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix or Limit and numParsedArgs == #args then
+            self.i -= 1
             break
         end
 
@@ -190,7 +191,7 @@ function Parser:ParseString(script)
         end
 
         if self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix then
-            self.i += 1
+            self.i += #self.CmdPrefix
             while self.script:sub(self.i, self.i):find("%s") do
                 self.i += 1
             end
