@@ -218,8 +218,8 @@ for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
 	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage })
 end
 
-for i = 0, 90 do
-	LongChat = LongChat.."⸻"
+for i = 0, 6 do
+	LongChat = LongChat.."⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻ "
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
