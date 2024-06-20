@@ -213,8 +213,8 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 	end
 end
 
-for _, Door in ipairs(Doors:GetChildren()) do
-	--table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
+for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
+	table.insert(SpamSounds, { Spawn.Sound })
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
@@ -1014,7 +1014,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and Sound:FindFirstAncestorOfClass("Tool") and Sound:FindFirstAncestorOfClass("Tool").Name == KeyCardName then
+		--[[if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil then
 			local SoundArg = {
 				Sound,
 				Sound:FindFirstAncestorOfClass("Tool")
@@ -1022,7 +1022,7 @@ function CharacterAdded(NewCharacter)
 
 			table.insert(MySounds, SoundArg)
 			table.insert(SpamSounds, SoundArg)
-		end
+		end]]
 	end
 
 	Humanoid.Died:Once(function()
@@ -1902,8 +1902,8 @@ function AnnoyingSounds()
 		SoundEvent:FireServer(unpack(Sound))
 		SoundNum += 1
 
-		if SoundNum % 300 == 3 then
-			task.wait(.6)
+		if SoundNum % 60 == 3 then
+			task.wait(.27)
 		end
 	until not SpammingSounds
 end
