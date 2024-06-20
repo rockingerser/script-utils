@@ -2247,6 +2247,12 @@ function UnoutlinePlayers(players)
 	Remove(TargetList.Outline, players)
 end
 
+function Prefix(NewPrefix)
+	if typeof(NewPrefix) == "string" then
+		parser.CmdPrefix = NewPrefix
+	end
+end
+
 Players.PlayerAdded:Connect(PlayerAdded)
 UserInputService.JumpRequest:Connect(function()
 	if InfiniteJumpEnabled then
@@ -2574,12 +2580,12 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-	name = "spamsounds",
+	name = "noise",
 	callback = AnnoyingSounds
 })
 
 vm:CreateCommand({
-	name = "unspamsounds",
+	name = "unnoise",
 	callback = UnannoyingSounds
 })
 
@@ -2742,6 +2748,16 @@ vm:CreateCommand({
     args = {
         {
             name = "players"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "prefix",
+    callback = Prefix,
+    args = {
+        {
+            name = "prefix"
         }
     }
 })

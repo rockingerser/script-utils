@@ -165,7 +165,7 @@ function Parser:ParseArgs(forCommand)
             self.i += 1
         end
 
-        if self.i > #self.script or self.script:sub(self.i, self.i) == self.CmdPrefix then
+        if self.i > #self.script or self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix then
             break
         end
 
@@ -189,7 +189,7 @@ function Parser:ParseString(script)
             continue
         end
 
-        if char == self.CmdPrefix then
+        if self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix then
             self.i += 1
             while self.script:sub(self.i, self.i):find("%s") do
                 self.i += 1
