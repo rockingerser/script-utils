@@ -13,6 +13,7 @@ local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local Lighting = game:GetService("Lighting")
 local NetworkClient = game:GetService("NetworkClient")
+local StarterGui = game:GetService("StarterGui")
 local AdminScreenGui = Instance.new("ScreenGui")
 local AdminCmdBox = Instance.new("TextBox")
 local AdminRoundCorners = Instance.new("UICorner")
@@ -98,7 +99,6 @@ local KnifeName = "Crude Knife"
 local HammerName = "Hammer"
 local KeyCardName = "Key card"
 local OtherGunThatBehavesLikeTheAkName = "M4A1"
-local LongChat = ""
 local DrawCurrGun = PistolName
 local BulletName = "RayPart"
 local ChattedDebounce = false
@@ -191,6 +191,43 @@ local LookAlikes = {
 	y = "у",
 	z = "ᴢ"
 }
+local Greet = {
+    "Welcome to the game, %s!",
+    "Glad to have you here, %s!",
+    "Hey %s, get ready for an adventure!",
+    "Look who's here! Welcome, %s!",
+    "Join the fun, %s!",
+    "It's great to see you, %s!",
+    "Let's have a great game, %s!",
+    "Greetings, %s!",
+    "Hope you enjoy your time here, %s!",
+    "Welcome aboard, %s!"
+}
+local Bye = {
+    "Oh no, %s has left the game.",
+    "We'll miss you, %s.",
+    "Goodbye, %s. Hope to see you soon!",
+    "Sad to see you go, %s.",
+    "Farewell, %s.",
+    "See you next time, %s.",
+    "Take care, %s.",
+    "Thanks for playing, %s!",
+    "Until next time, %s.",
+    "Safe travels, %s."
+}
+local Death = {
+    "Rest in peace, %s.",
+    "%s has fallen in battle.",
+    "Oh no, %s has died.",
+    "%s met their end.",
+    "We mourn the loss of %s.",
+    "%s has been defeated.",
+    "Alas, poor %s is no more.",
+    "Farewell, brave %s.",
+    "%s fought valiantly but has perished.",
+    "%s has been slain."
+}
+local SystemMessagesEnabled = false
 local CurrentState = DefaultState
 local LaggingServer = false
 local TimeRefresh = math.huge
@@ -216,10 +253,6 @@ end
 
 for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
 	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage })
-end
-
-for i = 0, 6 do
-	LongChat = LongChat.."baby shark⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻"
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
@@ -1034,6 +1067,10 @@ function CharacterAdded(NewCharacter)
 		HealthChanged:Disconnect()
 		NoGunsCheck:Disconnect()
 		RootSoundAdded:Disconnect()
+
+		if SystemMessagesEnabled then
+			Chat(string.format(Death[RandGen:NextInteger(1, #Death)], player.DisplayName), true)
+		end
 
 		if PassCheck(player, TargetList.PendingNuke) then
 			KillPlayers(Players:GetPlayers())
@@ -2258,22 +2295,25 @@ function Prefix(NewPrefix)
 	end
 end
 
-function Junk()
-	local Text = ""
-	for i = 0, 240 do
-		Text = Text..string.char(RandGen:NextInteger(0, 255))
-	end
-	return Text
+function SystemMessages()
+	SystemMessagesEnabled = true
 end
 
-function ClearChat()
-	for i = 0, 7 do
-		Chat(Junk())
-		task.wait()
-	end
+function UnsystemMessages()
+	SystemMessagesEnabled = false
 end
 
-Players.PlayerAdded:Connect(PlayerAdded)
+function DisplayChat()
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
+end
+
+Players.PlayerAdded:Connect(function(player)
+	if SystemMessagesEnabled then
+		Chat(string.format(Greet[RandGen:NextInteger(1, #Greet)], player.DisplayName), true)
+	end
+	PlayerAdded(player)
+end)
+
 UserInputService.JumpRequest:Connect(function()
 	if InfiniteJumpEnabled then
 		LocalHumanoid:ChangeState(Enum.HumanoidStateType.Jumping)
@@ -2787,6 +2827,21 @@ vm:CreateCommand({
     callback = ClearChat
 })
 
+vm:CreateCommand({
+    name = "sysmessages",
+    callback = SystemMessages
+})
+
+vm:CreateCommand({
+    name = "unsysmessages",
+    callback = UnsystemMessages
+})
+
+vm:CreateCommand({
+    name = "displaychat",
+    callback = DisplayChat
+})
+
 Player.Chatted:Connect(function(msg)
 	if ChattedDebounce then
 		return
@@ -2807,6 +2862,9 @@ Player.Chatted:Connect(function(msg)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+	if SystemMessagesEnabled then
+		Chat(string.format(Bye[RandGen:NextInteger(1, #Bye)], player.DisplayName), true)
+	end
 	for _, List in ipairs(TargetList) do
 		Remove(List, player)
 	end
