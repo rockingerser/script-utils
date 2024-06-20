@@ -1287,7 +1287,7 @@ function GetItem(ItemName)
 	end
 
 	SpoofPosition("getitemtask"..ItemName, GetItemPriority, Item.CFrame)
-	while Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
+	while Player:FindFirstChild("Backpack") ~= nil and Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
 		ItemHandler:InvokeServer(Item)
 	end
 	RunService.PostSimulation:Wait()
