@@ -2773,7 +2773,7 @@ Player.Chatted:Connect(function(msg)
 		ChattedDebounce = false
 	end)()
 
-	if msg:sub(1, 1) == parser.CmdPrefix then
+	if msg:sub(1, #parser.CmdPrefix) == parser.CmdPrefix then
 		local ok, code = pcall(parser.ParseString, parser, msg)
 		if ok then
 			vm:Execute(code)
