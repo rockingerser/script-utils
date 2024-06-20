@@ -2823,11 +2823,6 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-    name = "clearchat",
-    callback = ClearChat
-})
-
-vm:CreateCommand({
     name = "sysmessages",
     callback = SystemMessages
 })
