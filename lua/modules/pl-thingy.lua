@@ -219,7 +219,7 @@ for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
 end
 
 for i = 0, 6 do
-	LongChat = LongChat.."⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻ "
+	LongChat = LongChat.."baby shark⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻⸻"
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
