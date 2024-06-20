@@ -2728,7 +2728,7 @@ vm:CreateCommand({
 
 vm:CreateCommand({
     name = "outline",
-    callback = OutlinePlayers
+    callback = OutlinePlayers,
 	args = {
 		{
 			name = "players"
