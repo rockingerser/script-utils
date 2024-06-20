@@ -2193,7 +2193,7 @@ function GetLandmine()
 
 	Tool.Name = "Landmine"
 	Handle.Name = "Handle"
-
+	Handle.Size = Vector3.one * .001
 	Handle.Parent = Tool
 	Tool.Parent = Player.Backpack
 
