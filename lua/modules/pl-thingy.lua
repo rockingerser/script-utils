@@ -1846,7 +1846,7 @@ function TouchFling()
 	TouchFlingEnabled = true
 	
 	repeat
-		SpoofVelocity("touchflingtask", TouchFlingPriority, CFrame.Angles(0, RandGen:NextNumber(-math.pi, math.pi), 0):VectorToWorldSpace(Vector3.new(0, 60, FlingForce)))
+		SpoofVelocity("touchflingtask", TouchFlingPriority, Vector3.new(FlingForce, FlingForce, FlingForce))
 		RunService.PostSimulation:Wait()
 	until not TouchFlingEnabled
 
@@ -1892,6 +1892,7 @@ function FlingPlayers(players)
 	end
 
 	if ShouldBeginFling then
+		SpoofVelocity("flingplayertask", FlingPlayersVelPriority, Vector3.new(FlingForce, FlingForce, FlingForce))
 		repeat
 			local TargetPlayer = table.remove(FlingingPlayers, 1)
 			local TargetRoot = GetCharLimb("HumanoidRootPart", false, TargetPlayer)
@@ -1909,7 +1910,6 @@ function FlingPlayers(players)
 
 				local TargetRootVel = TargetRoot.AssemblyLinearVelocity.Magnitude * 1.5
 
-				SpoofVelocity("flingplayertask", FlingPlayersVelPriority, CFrame.Angles(0, RandGen:NextNumber(-math.pi, math.pi), 0):VectorToWorldSpace(Vector3.new(0, 60, FlingForce)))
 				SpoofPosition("flingplayertask", FlingPlayersPosPriority, CFrame.new(TargetRoot.Position + TargetHum.MoveDirection * RandGen:NextNumber(TargetRootVel * .3, TargetRootVel)) * CFrame.Angles(
 					RandGen:NextNumber(-math.pi, math.pi),
 					RandGen:NextNumber(-math.pi, math.pi),
