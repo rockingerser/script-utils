@@ -98,6 +98,7 @@ local KnifeName = "Crude Knife"
 local HammerName = "Hammer"
 local KeyCardName = "Key card"
 local OtherGunThatBehavesLikeTheAkName = "M4A1"
+local LongChat = ""
 local DrawCurrGun = PistolName
 local BulletName = "RayPart"
 local ChattedDebounce = false
@@ -215,6 +216,10 @@ end
 
 for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
 	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage })
+end
+
+for i = 0, 90 do
+	LongChat = LongChat.."𒐫"
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
@@ -2253,6 +2258,13 @@ function Prefix(NewPrefix)
 	end
 end
 
+function ClearChat()
+	for i = 0, 7 do
+		Chat(LongChat)
+		task.wait()
+	end
+end
+
 Players.PlayerAdded:Connect(PlayerAdded)
 UserInputService.JumpRequest:Connect(function()
 	if InfiniteJumpEnabled then
@@ -2760,6 +2772,11 @@ vm:CreateCommand({
             name = "prefix"
         }
     }
+})
+
+vm:CreateCommand({
+    name = "clearchat",
+    callback = ClearChat
 })
 
 Player.Chatted:Connect(function(msg)
