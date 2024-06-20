@@ -2258,9 +2258,17 @@ function Prefix(NewPrefix)
 	end
 end
 
+function Junk()
+	local Text = ""
+	for i = 0, 240 do
+		Text = Text..string.char(RandGen:NextInteger(0, 255))
+	end
+	return Text
+end
+
 function ClearChat()
 	for i = 0, 7 do
-		Chat(LongChat)
+		Chat(Junk())
 		task.wait()
 	end
 end
