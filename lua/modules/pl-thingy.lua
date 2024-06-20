@@ -1014,7 +1014,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		--[[if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil then
+		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound.Name == "punchSound" then
 			local SoundArg = {
 				Sound,
 				Sound:FindFirstAncestorOfClass("Tool")
@@ -1022,7 +1022,7 @@ function CharacterAdded(NewCharacter)
 
 			table.insert(MySounds, SoundArg)
 			table.insert(SpamSounds, SoundArg)
-		end]]
+		end
 	end
 
 	Humanoid.Died:Once(function()
