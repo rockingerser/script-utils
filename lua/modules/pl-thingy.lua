@@ -214,7 +214,7 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 end
 
 for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
-	table.insert(SpamSounds, { Spawn.Sound })
+	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage })
 end
 
 AdminScreenGui.Name = HttpService:GenerateGUID()
