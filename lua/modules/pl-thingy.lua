@@ -258,7 +258,7 @@ SpoofIndicatorPart.Parent = workspace
 
 -- Import some admin modules
 local CommandVM = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-vm.lua"), true)()
-local Parser = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-parser.lua"), true)()
+local Parser = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-parser.lua?key=0"), true)()
 
 local vm = CommandVM.new()
 local parser = Parser.new(vm)

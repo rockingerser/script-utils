@@ -166,7 +166,6 @@ function Parser:ParseArgs(forCommand, Limit)
         end 
 
         if self.i > #self.script or self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix or Limit and numParsedArgs == #args then
-            self.i -= 1
             break
         end
 
