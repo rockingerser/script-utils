@@ -2206,7 +2206,7 @@ function GetLandmine()
 		Landmine.Size = Vector3.new(3, .001, 3)
 		Landmine.Touched:Connect(function(Hit)
 			local TargetPl = Players:GetPlayerFromCharacter(Hit.Parent)
-			if TargetPl and TargetPl.Team ~= Player.Team then
+			if TargetPl and TargetPl.Team ~= Player.Team or Hit.Name == BulletName then
 			    Explosion(Landmine.Position, 30)
 				table.remove(Landmines, table.find(Landmines, Landmine)):Destroy()
 			end
@@ -2227,8 +2227,8 @@ function Unlandmine()
 end
 
 function RemoveLandmines()
-	for Key in ipairs(Landmines) do
-		table.remove(Landmines, Key):Destroy()
+	while #Landmines > 0 do
+		table.remove(Landmines, 1):Destroy()
 	end
 end
 
