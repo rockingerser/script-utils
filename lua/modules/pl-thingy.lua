@@ -258,7 +258,7 @@ SpoofIndicatorPart.Parent = workspace
 
 -- Import some admin modules
 local CommandVM = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-vm.lua"), true)()
-local Parser = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-parser.lua?key=0"), true)()
+local Parser = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/admin-cmd-parser.lua"), true)()
 
 local vm = CommandVM.new()
 local parser = Parser.new(vm)
@@ -2793,7 +2793,7 @@ AdminCmdBox.FocusLost:Connect(function(EnterPressed)
 	end
 
 	local ok, code = pcall(parser.ParseString, parser,
-		if AdminCmdBox.Text:sub(1, 1) == parser.CmdPrefix then
+		if AdminCmdBox.Text:sub(1, #parser.CmdPrefix) == parser.CmdPrefix then
 			AdminCmdBox.Text
 		else 
 			parser.CmdPrefix..AdminCmdBox.Text
