@@ -2240,6 +2240,10 @@ coroutine.wrap(function()
 				Draw3D(Draw3DOutlineCharacter(player.Character))
 			end
 		end
+
+		for _, Grenade in ipairs(Grenades) do
+			Draw3D(Draw3DGenerateBlock(Grenade.CFrame, Grenade.Size))
+		end
 	end
 end)()
 
