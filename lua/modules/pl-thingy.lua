@@ -218,7 +218,7 @@ for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
 	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage })
 end
 
-for i = 0, 240 do
+for i = 0, 90 do
 	LongChat = LongChat.."⸻"
 end
 
