@@ -27,6 +27,7 @@ local PrisonItems = workspace.Prison_ITEMS
 local Doors = workspace.Doors
 local CarContainer = workspace.CarContainer
 local Player = Players.LocalPlayer
+local Mouse = Player:GetMouse()
 local TeamEvent = Remote.TeamEvent
 local GotArrested = Remote.arrestPlayer
 local Arrest = Remote.arrest
@@ -108,10 +109,12 @@ local CarSpawners = {}
 local SpamSounds = {}
 local Npcs = {}
 local Landmines = {}
+local Grenades = {}
 local SpamDrawings = nil
 local NumDraws = 0
 local DrawingBullets = false
 local LandmineEnabled = false
+local GrenadeEnabled = false
 local JailLocations = {
 	CFrame.new(-321, 84, 2046),
 	CFrame.new(711, 102, 2373)
@@ -1135,6 +1138,10 @@ function CharacterAdded(NewCharacter)
 
 	if LandmineEnabled then
 		GetLandmine()
+	end
+
+	if GrenadeEnabled then
+		GetGrenade()
 	end
 
 	local SpoofServer = RunService.PostSimulation:Connect(function()
@@ -2281,6 +2288,47 @@ function RemoveLandmines()
 	end
 end
 
+function GetGrenade()
+	local Tool = Instance.new("Tool")
+	local Handle = Instance.new("Part")
+
+	Tool.Name = "Grenade"
+	Tool.ToolTip = "Don't spam it plz"
+
+	Handle.Name = "Handle"
+	Handle.Size = Vector3.one * .001
+
+	Handle.Parent = Tool
+	Tool.Parent = Player.Backpack
+
+	Tool.Activated:Connect(function()
+		RunService.PostSimulation:Wait()
+		local Grenade = Instance.new("Part")
+
+		Grenade.Name = HttpService:GenerateGUID()
+		Grenade.CFrame = Handle.CFrame
+		Grenade.Size = Vector3.one
+		Grenade.AssemblyLinearVelocity = (Mouse.Hit.Position - Grenade.Position).Unit * 120
+		Grenade.Parent = workspace
+
+		table.insert(Grenades, Grenade)
+
+		task.wait(3)
+
+		Explosion(Grenade.Position, 30)
+		table.remove(Grenades, table.find(Grenades, Grenade)):Destroy()
+	end)
+end
+
+function Grenade()
+	GrenadeEnabled = true
+	GetGrenade()
+end
+
+function Ungrenade()
+	GrenadeEnabled = false
+end
+
 function OutlinePlayers(players)
 	Insert(TargetList.Outline, players)
 end
@@ -2835,6 +2883,16 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "displaychat",
     callback = DisplayChat
+})
+
+vm:CreateCommand({
+    name = "grenade",
+    callback = Grenade
+})
+
+vm:CreateCommand({
+    name = "ungrenade",
+    callback = Ungrenade
 })
 
 Player.Chatted:Connect(function(msg)
