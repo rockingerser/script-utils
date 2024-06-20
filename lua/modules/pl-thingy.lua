@@ -1902,8 +1902,8 @@ function AnnoyingSounds()
 		SoundEvent:FireServer(unpack(Sound))
 		SoundNum += 1
 
-		if SoundNum % 60 == 3 then
-			task.wait(.27)
+		if SoundNum % 9 == 3 then
+			RunService.PostSimulation:Wait()
 		end
 	until not SpammingSounds
 end
