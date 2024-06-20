@@ -1112,7 +1112,7 @@ function CharacterAdded(NewCharacter)
 		end
 	end)
 
-	RunService:BindToRenderStep(Secret, 198, function()
+	RunService:BindToRenderStep(Secret, 120, function()
 		if SpoofsOldCFrame then
 			Root.CFrame = SpoofsOldCFrame
 			SpoofsOldCFrame = nil
