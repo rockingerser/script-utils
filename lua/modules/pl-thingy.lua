@@ -77,8 +77,9 @@ local NeonTxtIns = nil
 local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
 local FlyLinearVel = nil
+local FlyVecForce = nil
 local FlyAttachment = nil
-local OriginalGravity = workspace.Gravity
+local FlyAttachment2 = nil
 local FlySpeed = 60
 local FlyBindName = HttpService:GenerateGUID()
 local BiggestNumber = 3e12
@@ -171,7 +172,7 @@ local LookAlikes = {
 	c = "c",--ϲ",
 	d = "ԁ",--ԁ",
 	e = "е",
-	f = "f",--𝖿",
+	f = "𝖿",
 	g = "ɡ",
 	h = "һ",
 	i = "і",
@@ -2105,26 +2106,32 @@ function Fly(Speed)
 	SetFlySpeed(Speed)
 
 	FlyLinearVel = Instance.new("LinearVelocity")
+	FlyVecForce = Instance.new("VectorForce")
 	FlyAttachment = Instance.new("Attachment")
+	FlyAttachment2 = Instance.new("Attachment")
 
 	local Root = GetCharLimb("HumanoidRootPart", true)
 	local Humanoid = GetCharLimb("Humanoid", true)
 
 	FlyLinearVel.Name = HttpService:GenerateGUID()
 	FlyLinearVel.Attachment0 = FlyAttachment
-	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
+	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+	FlyVecForce.Attachment0 = FlyAttachment2
+	FlyVecForce.ApplyAtCenterOfMass = true
+	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
+
+	FlyVecForce.Name = HttpService:GenerateGUID()
 	FlyAttachment.Name = HttpService:GenerateGUID()
+	FlyAttachment2.Name = HttpService:GenerateGUID()
 
 	FlyLinearVel.Parent = GetCharacter()
+	FlyVecForce.Parent = GetCharacter()
 	FlyAttachment.Parent = Root
-
-	workspace.Gravity = 0
+	FlyAttachment2.Parent = Root
 
 	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
 		local MovVector = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection)
-		local BackVector = -Camera.CFrame.LookVector
-		local RightVector = Camera.CFrame.RightVector
 		local AssemblyMass = Root.AssemblyMass
 
 		-- Prevent auto-flinging yourself when seated on anchored seats
@@ -2133,7 +2140,9 @@ function Fly(Speed)
 		end
 
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
-		FlyLinearVel.VectorVelocity = (BackVector * MovVector.Z + RightVector * MovVector.X) * FlySpeed
+
+		FlyLinearVel.VectorVelocity = (MovVector.Z + MovVector.X) * FlySpeed
+		FlyVecForce.Force = Vector3.new(0, AssemblyMass * workspace.Gravity, 0)
 
 		if Humanoid.SeatPart == nil then
 			Humanoid.PlatformStand = true
@@ -2154,12 +2163,21 @@ function Unfly()
 		FlyLinearVel = nil
 	end
 
+	if FlyVecForce then
+		FlyVecForce:Destroy()
+		FlyVecForce = nil
+	end
+
 	if FlyAttachment then
 		FlyAttachment:Destroy()
 		FlyAttachment = nil
 	end
 
-	workspace.Gravity = OriginalGravity
+	if FlyAttachment2 then
+		FlyAttachment2:Destroy()
+		FlyAttachment2 = nil
+	end
+
 	RunService:UnbindFromRenderStep(FlyBindName)
 	LocalHumanoid.PlatformStand = false
 end
