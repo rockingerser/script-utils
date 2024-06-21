@@ -254,11 +254,14 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 	end
 end
 
---[[
-for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
-	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage.Tools["Extendo mirror"] })
+for _, Door in ipairs(Doors:GetChildren()) do
+	table.insert(SpamSounds, { Door.scn.cardScanner.Sound })
 end
-]]
+
+for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
+	table.insert(SpamSounds, { Spawn.Sound })
+end
+
 AdminScreenGui.Name = HttpService:GenerateGUID()
 AdminScreenGui.DisplayOrder = -1
 
@@ -1055,7 +1058,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and Sound.Parent == Root then
+		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") then
 			local Tool = Sound:FindFirstAncestorOfClass("Tool")
 
 			local SoundArg = {
@@ -1124,10 +1127,12 @@ function CharacterAdded(NewCharacter)
 
 	ToolSoundAdded(Head:WaitForChild("punchSound"))
 
+	--[[
 	for _, Sound in ipairs(Root:GetChildren()) do
 		ToolSoundAdded(Sound)
 		Root.ChildAdded:Connect(ToolSoundAdded)
 	end
+	]]
 
 	RootSoundAdded = Root.ChildAdded:Connect(ToolSoundAdded)
 
