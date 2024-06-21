@@ -1949,6 +1949,7 @@ function AnnoyingSounds()
 		end
 
 		local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
+		print(Sound)
 
 		for _, Connection in pairs(SoundConnections) do
 			Connection:Fire(unpack(Sound))
