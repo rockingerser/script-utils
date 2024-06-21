@@ -2116,6 +2116,9 @@ function Fly(Speed)
 	FlyLinearVel.Name = HttpService:GenerateGUID()
 	FlyLinearVel.Attachment0 = FlyAttachment
 	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
+	FlyLinearVel.ForceLimitsEnabled = true
+	FlyLinearVel.ForceLimitMode = Enum.ForceLimitMode.Magnitude
+	FlyLinearVel.MaxForce = 90000
 	FlyVecForce.Attachment0 = FlyAttachment
 	FlyVecForce.ApplyAtCenterOfMass = true
 	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
@@ -2124,7 +2127,7 @@ function Fly(Speed)
 	FlyAlignOr.Name = HttpService:GenerateGUID()
 	FlyAlignOr.AlignType = Enum.AlignType.AllAxes
 	FlyAlignOr.Mode = Enum.OrientationAlignmentMode.OneAttachment
-	FlyAlignOr.Responsiveness = 150
+	FlyAlignOr.Responsiveness = 90
 	FlyAlignOr.Attachment0 = FlyAttachment
 
 	FlyLinearVel.Parent = Root
