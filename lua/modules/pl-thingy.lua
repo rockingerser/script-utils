@@ -1126,6 +1126,7 @@ function CharacterAdded(NewCharacter)
 
 	for _, Sound in ipairs(Root:GetChildren()) do
 		ToolSoundAdded(Sound)
+		Root.ChildAdded:Connect(ToolSoundAdded)
 	end
 
 	RootSoundAdded = Root.ChildAdded:Connect(ToolSoundAdded)
