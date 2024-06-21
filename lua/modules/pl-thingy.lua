@@ -1971,7 +1971,7 @@ function AnnoyingSounds()
 
 		Step += 1
 
-		if Step % 12 == 3 then
+		if Step % 6 == 3 then
 			if RandGen:NextInteger(0, 90) == 0 then
 				SoundNum += 1
 			end
