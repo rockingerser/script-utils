@@ -562,7 +562,8 @@ function SaveState()
 		keycard = false,
 		otherGunThatBehavesLikeTheAk = false,
 		equippedTool = LocalCharacter:FindFirstChildOfClass("Tool"),
-		team = Player.Team
+		team = Player.Team,
+		rotCframe = workspace.CurrentCamera.CFrame.Rotation
 	}
 
 	if LocalRoot.Position.Y > workspace.FallenPartsDestroyHeight then
@@ -584,16 +585,16 @@ function RestoreState(NoRespawn)
 		if ShouldSwitchToGuards then
 			SwitchToTeam(Guards, true)
 		end
-		if Player.Team ~= Guards or not ShouldSwitchToGuards then
+		if Player.Team ~= Guards and ShouldSwitchToGuards or not ShouldSwitchToGuards then
 			SwitchToTeam(Inmates, true)
-			--print("pe")
 		end
 	end
 
 	if not NoRespawn then
 		SwitchToTeam(CurrentState.team, CurrentState.team ~= Criminals or Player.Team ~= Inmates)
 	end
-	print(CurrentState.team)
+	
+	workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position) * CurrentStase.rotCframe
 	
 	local Root = Player.Character:WaitForChild("HumanoidRootPart")
 	LocalRoot = Root
