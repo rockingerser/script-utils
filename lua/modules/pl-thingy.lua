@@ -593,8 +593,8 @@ function RestoreState(NoRespawn)
 	if not NoRespawn then
 		SwitchToTeam(CurrentState.team, CurrentState.team ~= Criminals or Player.Team ~= Inmates)
 	end
-	
-	workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position) * CurrentStase.rotCframe
+
+	workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position) * CurrentState.rotCframe
 	
 	local Root = Player.Character:WaitForChild("HumanoidRootPart")
 	LocalRoot = Root
