@@ -2108,7 +2108,6 @@ function Fly(Speed)
 	FlyLinearVel = Instance.new("LinearVelocity")
 	FlyVecForce = Instance.new("VectorForce")
 	FlyAttachment = Instance.new("Attachment")
-	FlyAttachment2 = Instance.new("Attachment")
 
 	local Root = GetCharLimb("HumanoidRootPart", true)
 	local Humanoid = GetCharLimb("Humanoid", true)
@@ -2141,7 +2140,7 @@ function Fly(Speed)
 			AssemblyMass = 0
 		end
 
-		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
+		--Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
 
 		FlyLinearVel.VectorVelocity = (RightVector * MovVector.X + BackVector * MovVector.Z) * FlySpeed
 		FlyVecForce.Force = Vector3.new(0, AssemblyMass * workspace.Gravity, 0)
