@@ -1066,6 +1066,12 @@ function CharacterAdded(NewCharacter)
 				Tool
 			}
 
+			task.wait(.9)
+
+			if Sound.Parent == nil then
+				return print("Fake sound | ", Sound)
+			end
+
 			table.insert(MySounds, SoundArg)
 			table.insert(SpamSounds, 1, SoundArg)
 		end
