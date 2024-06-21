@@ -1067,7 +1067,7 @@ function CharacterAdded(NewCharacter)
 			}
 
 			table.insert(MySounds, SoundArg)
-			table.insert(SpamSounds, SoundArg)
+			table.insert(SpamSounds, 1, SoundArg)
 		end
 	end
 
@@ -1956,7 +1956,7 @@ function AnnoyingSounds()
 		local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
 
 		for _, Connection in pairs(SoundConnections) do
-			coroutine.wrap(Connection.Function)(unpack(Sound))
+			Connection:Fire(unpack(Sound))
 		end
 
 		SoundEvent:FireServer(unpack(Sound))
