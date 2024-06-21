@@ -2118,7 +2118,7 @@ function Fly(Speed)
 	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
 	FlyLinearVel.ForceLimitsEnabled = true
 	FlyLinearVel.ForceLimitMode = Enum.ForceLimitMode.Magnitude
-	FlyLinearVel.MaxForce = 90000
+	FlyLinearVel.MaxForce = math.huge ^ math.huge
 	FlyVecForce.Attachment0 = FlyAttachment
 	FlyVecForce.ApplyAtCenterOfMass = true
 	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
