@@ -254,10 +254,11 @@ for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 	end
 end
 
+--[[
 for _, Spawn in ipairs(workspace.Prison_guardspawn:GetChildren()) do
 	table.insert(SpamSounds, { Spawn.Sound, ReplicatedStorage.Tools["Extendo mirror"] })
 end
-
+]]
 AdminScreenGui.Name = HttpService:GenerateGUID()
 AdminScreenGui.DisplayOrder = -1
 
@@ -1054,15 +1055,21 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		--[[if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound.Name == "punchSound" then
+		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil then
+			local Tool = Sound:FindFirstAncestorOfClass("Tool")
+
+			if Tool.Name ~= KeyCardName then
+				return
+			end
+
 			local SoundArg = {
 				Sound,
-				Sound:FindFirstAncestorOfClass("Tool")
+				Tool
 			}
 
 			table.insert(MySounds, SoundArg)
 			table.insert(SpamSounds, SoundArg)
-		end]]
+		end
 	end
 
 	Humanoid.Died:Once(function()
