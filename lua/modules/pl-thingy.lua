@@ -1944,6 +1944,7 @@ function AnnoyingSounds()
 	end
 
 	local SoundNum = 0
+	local Step = 0
 
 	SpammingSounds = true
 
@@ -1962,7 +1963,9 @@ function AnnoyingSounds()
 
 		SoundEvent:FireServer(unpack(Sound))
 
-		if SoundNum % 12 == 3 then
+		Step += 1
+
+		if Step % 12 == 3 then
 			if RandGen:NextInteger(0, 90) == 0 then
 				SoundNum += 1
 			end
