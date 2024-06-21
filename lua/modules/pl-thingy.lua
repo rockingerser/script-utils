@@ -1058,7 +1058,7 @@ function CharacterAdded(NewCharacter)
 		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil then
 			local Tool = Sound:FindFirstAncestorOfClass("Tool")
 
-			if Tool.Name ~= KeyCardName then
+			if Tool == nil or Tool.Name ~= KeyCardName then
 				return
 			end
 
