@@ -1055,7 +1055,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound.Parent == Root then
+		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and Sound.Parent == Root then
 			local Tool = Sound:FindFirstAncestorOfClass("Tool")
 
 			local SoundArg = {
