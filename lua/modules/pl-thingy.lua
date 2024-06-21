@@ -1066,10 +1066,10 @@ function CharacterAdded(NewCharacter)
 				Tool
 			}
 
-			task.wait(.9)
+			RunService.PostSimulation:Wait()
 
-			if Sound.Parent == nil then
-				return print("Fake sound | ", Sound)
+			if Sound.IsPlaying then
+				return
 			end
 
 			table.insert(MySounds, SoundArg)
