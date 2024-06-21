@@ -580,10 +580,6 @@ function RestoreState(NoRespawn)
 
 	RestoringState = true
 
-	local CameraChanged = workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
-		workspace.CurrentCamera.CFrame = CFrame.new(workspace.CurrentCamera.CFrame.Position) * CurrentState.rotCframe
-	end)
-
 	if CurrentState.team == Criminals and not NoRespawn then
 		local ShouldSwitchToGuards = #Guards:GetPlayers() < 8
 		if ShouldSwitchToGuards then
@@ -597,8 +593,6 @@ function RestoreState(NoRespawn)
 	if not NoRespawn then
 		SwitchToTeam(CurrentState.team, CurrentState.team ~= Criminals or Player.Team ~= Inmates)
 	end
-
-	CameraChanged:Disconnect()
 	
 	local Root = Player.Character:WaitForChild("HumanoidRootPart")
 	LocalRoot = Root
