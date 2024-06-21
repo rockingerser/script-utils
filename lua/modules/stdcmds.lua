@@ -2,6 +2,7 @@
 return (function(VM)
     local Players = game:GetService("Players")
     local Player = Players.LocalPlayer
+    local Rand = Random.new()
 
     VM:CreateCommand({
         name = "echo",
@@ -66,5 +67,14 @@ return (function(VM)
         end,
         level = 0,
         description = "Returns a player (yourself)"
+    })
+    VM:CreateCommand({
+        name = "random",
+        callback = function()
+            local players = Players:GetPlayers()
+            return players[Rand:NextInteger(1, #players)]
+        end,
+        level = 0,
+        description = "Returns a random player"
     })
 end)

@@ -1611,6 +1611,9 @@ function BillboardTextPlayer(player, text)
 	if NeonTxtIns == nil then
 		return
 	end
+
+	print(player)
+	print(text)
 	
 	TargetBillboardTextPlayer = player
 	NeonTxtIns.Text = text
