@@ -1951,12 +1951,12 @@ function AnnoyingSounds()
 		if #SpamSounds == 0 then
 			RunService.PostSimulation:Wait()
 			continue
-		end
+		enupdd
 
 		local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
 
 		for _, Connection in pairs(SoundConnections) do
-			Connection:Fire(unpack(Sound))
+			coroutine.wrap(Connection.Function)(unpack(Sound))
 		end
 
 		SoundEvent:FireServer(unpack(Sound))
