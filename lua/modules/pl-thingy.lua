@@ -78,6 +78,7 @@ local SpamSentences = nil
 local TargetBillboardTextPlayer = nil
 local FlyLinearVel = nil
 local FlyVecForce = nil
+local FlyAlignOr = nil
 local FlyAttachment = nil
 local FlySpeed = 60
 local FlyBindName = HttpService:GenerateGUID()
@@ -2106,6 +2107,7 @@ function Fly(Speed)
 
 	FlyLinearVel = Instance.new("LinearVelocity")
 	FlyVecForce = Instance.new("VectorForce")
+	FlyAlignOr = Instance.new("AlignOrientation")
 	FlyAttachment = Instance.new("Attachment")
 
 	local Root = GetCharLimb("HumanoidRootPart", true)
@@ -2117,12 +2119,17 @@ function Fly(Speed)
 	FlyVecForce.Attachment0 = FlyAttachment
 	FlyVecForce.ApplyAtCenterOfMass = true
 	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
-
 	FlyVecForce.Name = HttpService:GenerateGUID()
 	FlyAttachment.Name = HttpService:GenerateGUID()
+	FlyAlignOr.Name = HttpService:GenerateGUID()
+	FlyAlignOr.AlignType = Enum.AlignType.AllAxes
+	FlyAlignOr.Mode = Enum.OrientationAlignmentMode.OneAttachment
+	FlyAlignOr.Responsiveness = 150
+	FlyAlignOr.Attachment0 = FlyAttachment
 
-	FlyLinearVel.Parent = GetCharacter()
-	FlyVecForce.Parent = GetCharacter()
+	FlyLinearVel.Parent = Root
+	FlyVecForce.Parent = Root
+	FlyAttachment.Parent = Root
 	FlyAttachment.Parent = Root
 
 	RunService:BindToRenderStep(FlyBindName, 150, function()
@@ -2137,8 +2144,7 @@ function Fly(Speed)
 			AssemblyMass = 0
 		end
 
-		--Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
-
+		FlyAlignOr.CFrame = Camera.CFrame
 		FlyLinearVel.VectorVelocity = (RightVector * MovVector.X + BackVector * MovVector.Z) * FlySpeed
 		FlyVecForce.Force = Vector3.new(0, AssemblyMass * workspace.Gravity, 0)
 
@@ -2164,6 +2170,11 @@ function Unfly()
 	if FlyVecForce then
 		FlyVecForce:Destroy()
 		FlyVecForce = nil
+	end
+	
+	if FlyAlignOr then
+		FlyAlignOr:Destroy()
+		FlyAlignOr = nil
 	end
 
 	if FlyAttachment then
