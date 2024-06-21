@@ -170,25 +170,25 @@ local LookAlikes = {
 	a = "а",
 	b = "ʙ",
 	c = "ϲ",
-	d = "ԁ",
+	d = "ԁ",--ԁ",
 	e = "е",
 	f = "𝖿",
 	g = "ɡ",
 	h = "һ",
-	i = "і",
+	i = "ı̇",
 	j = "ϳ",
 	k = "κ",
 	l = "I",
-	m = "м",
-	n = "ɴ",
+	m = "ⅿ",
+	n = "ո"--ɴ",
 	o = "ο",
 	p = "р",
 	q = "ԛ",
 	r = "ʀ",
 	s = "ѕ",
-	t = "τ",
-	u = "υ",
-	v = "ѵ",
+	t = "t", --"τ",
+	u = "u",--υ",
+	v = "ν",--ѵ",
 	w = "ԝ",
 	x = "х",
 	y = "у",
@@ -2061,8 +2061,12 @@ function SetDrawTime(NewTime)
 	end
 end
 
-function ChatBypass(msg)
-	Chat(Bypass(msg), true)
+function ChatBypass(msg, channel)
+	Chat(Bypass(msg), false, channel)
+end
+
+function ChatLarge(msg, channel)
+	Chat(msg, true, channel)
 end
 
 function CopyTeam(player)
@@ -2607,7 +2611,7 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-	name = "algointeresante",
+	name = "pp",
 	callback = Sus
 })
 
@@ -2776,7 +2780,28 @@ vm:CreateCommand({
 
 vm:CreateCommand({
     name = "bypass",
-    callback = ChatBypass
+    callback = ChatBypass,
+	args = {
+		{
+			name = "msg"
+		},
+		{
+			name = "channel"
+		}
+	}
+})
+
+vm:CreateCommand({
+    name = "large",
+    callback = ChatLarge,
+    args = {
+        {
+            name = "msg"
+        },
+		{
+			name = "channel"
+		}
+    }
 })
 
 vm:CreateCommand({
