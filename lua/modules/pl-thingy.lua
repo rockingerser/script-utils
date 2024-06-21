@@ -1951,7 +1951,7 @@ function AnnoyingSounds()
 		if #SpamSounds == 0 then
 			RunService.PostSimulation:Wait()
 			continue
-		enupdd
+		end
 
 		local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
 
