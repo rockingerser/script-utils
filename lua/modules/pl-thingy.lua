@@ -1943,7 +1943,6 @@ function AnnoyingSounds()
 		return
 	end
 
-	local SoundConnections = getconnections(SoundEvent.OnClientEvent)
 	local SoundNum = 0
 
 	SpammingSounds = true
@@ -1956,15 +1955,17 @@ function AnnoyingSounds()
 		end
 
 		local Sound = SpamSounds[SoundNum % #SpamSounds + 1]
-
-		for _, Connection in pairs(SoundConnections) do
-			Connection:Fire(unpack(Sound))
-		end
+		local Clone = Sound[1]:Clone()
+		Clone.PlayOnRemove = true
+		Clone.Parent = Sound[1].Parent
+		Clone:Destroy()
 
 		SoundEvent:FireServer(unpack(Sound))
-		SoundNum += 1
 
 		if SoundNum % 12 == 3 then
+			if RandGen:NextInteger(0, 90) then
+				SoundNum += 1
+			end
 			RunService.PostSimulation:Wait()
 		end
 	until not SpammingSounds
