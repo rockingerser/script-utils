@@ -1962,7 +1962,7 @@ function AnnoyingSounds()
 		SoundEvent:FireServer(unpack(Sound))
 		SoundNum += 1
 
-		if SoundNum % 15 == 3 then
+		if SoundNum % 12 == 3 then
 			RunService.PostSimulation:Wait()
 		end
 	until not SpammingSounds
