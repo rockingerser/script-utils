@@ -2141,7 +2141,7 @@ function Fly(Speed)
 
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
 
-		FlyLinearVel.VectorVelocity = (MovVector.Z + MovVector.X) * FlySpeed
+		FlyLinearVel.VectorVelocity = MovVector * FlySpeed
 		FlyVecForce.Force = Vector3.new(0, AssemblyMass * workspace.Gravity, 0)
 
 		if Humanoid.SeatPart == nil then
