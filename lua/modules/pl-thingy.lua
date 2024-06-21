@@ -2115,7 +2115,7 @@ function Fly(Speed)
 
 	FlyLinearVel.Name = HttpService:GenerateGUID()
 	FlyLinearVel.Attachment0 = FlyAttachment
-	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.Attachment0
+	FlyLinearVel.RelativeTo = Enum.ActuatorRelativeTo.World
 	FlyVecForce.Attachment0 = FlyAttachment2
 	FlyVecForce.ApplyAtCenterOfMass = true
 	FlyVecForce.RelativeTo = Enum.ActuatorRelativeTo.World
@@ -2132,6 +2132,8 @@ function Fly(Speed)
 	RunService:BindToRenderStep(FlyBindName, 150, function()
 		local Camera = workspace.CurrentCamera
 		local MovVector = Camera.CFrame:VectorToObjectSpace(Humanoid.MoveDirection)
+		local BackVector = -Camera.CFrame.LookVector
+		local RightVector = Camera.CFrame.RightVector
 		local AssemblyMass = Root.AssemblyMass
 
 		-- Prevent auto-flinging yourself when seated on anchored seats
@@ -2141,7 +2143,7 @@ function Fly(Speed)
 
 		Root.CFrame = CFrame.new(Root.CFrame.Position) * Camera.CFrame.Rotation
 
-		FlyLinearVel.VectorVelocity = MovVector * FlySpeed
+		FlyLinearVel.VectorVelocity = (RightVector * MovVector.X + BackVector * MovVector.Z) * FlySpeed
 		FlyVecForce.Force = Vector3.new(0, AssemblyMass * workspace.Gravity, 0)
 
 		if Humanoid.SeatPart == nil then
