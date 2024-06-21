@@ -1058,7 +1058,7 @@ function CharacterAdded(NewCharacter)
 
 
 	local function ToolSoundAdded(Sound)
-		if Humanoid:GetState() ~= Enum.HumanoidStateType.Dead and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") then
+		if player.Character == NewCharacter and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") then
 			local Tool = Sound:FindFirstAncestorOfClass("Tool")
 
 			local SoundArg = {
@@ -1071,21 +1071,23 @@ function CharacterAdded(NewCharacter)
 		end
 	end
 
-	Humanoid.Died:Once(function()
+	player.CharacterRemoving:Once(function()
 		HealthChanged:Disconnect()
 		NoGunsCheck:Disconnect()
 		RootSoundAdded:Disconnect()
 
+		for _, Sound in ipairs(MySounds) do
+			table.remove(SpamSounds, table.find(SpamSounds, Sound))
+		end
+	end)
+	
+	Humanoid.Died:Once(function()
 		if SystemMessagesEnabled then
 			Chat(string.format(Death[RandGen:NextInteger(1, #Death)], player.DisplayName), true)
 		end
 
 		if PassCheck(player, TargetList.PendingNuke) then
 			KillPlayers(Players:GetPlayers())
-		end
-
-		for _, Sound in ipairs(MySounds) do
-			table.remove(SpamSounds, table.find(SpamSounds, Sound))
 		end
 
 		if player == Player and AntikillEnabled then
