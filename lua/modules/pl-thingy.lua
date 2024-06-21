@@ -1963,7 +1963,7 @@ function AnnoyingSounds()
 		SoundEvent:FireServer(unpack(Sound))
 
 		if SoundNum % 12 == 3 then
-			if RandGen:NextInteger(0, 90) then
+			if RandGen:NextInteger(0, 90) == 0 then
 				SoundNum += 1
 			end
 			RunService.PostSimulation:Wait()
