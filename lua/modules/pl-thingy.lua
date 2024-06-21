@@ -2129,7 +2129,7 @@ function Fly(Speed)
 
 	FlyLinearVel.Parent = Root
 	FlyVecForce.Parent = Root
-	FlyAttachment.Parent = Root
+	FlyAlignOr.Parent = Root
 	FlyAttachment.Parent = Root
 
 	RunService:BindToRenderStep(FlyBindName, 150, function()
