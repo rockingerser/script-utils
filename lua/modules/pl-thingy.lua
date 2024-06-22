@@ -1061,6 +1061,10 @@ function CharacterAdded(NewCharacter)
 		if player.Character == NewCharacter and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and not Sound.PlayOnRemove then
 			local Tool = Sound:FindFirstAncestorOfClass("Tool")
 
+			if Tool.Name ~= ShotgunName then
+				return
+			end
+
 			local SoundArg = {
 				Sound,
 				Tool
@@ -1971,7 +1975,7 @@ function AnnoyingSounds()
 
 		Step += 1
 
-		if Step % 6 == 3 then
+		if Step % 3 == 0 then
 			if RandGen:NextInteger(0, 90) == 0 then
 				SoundNum += 1
 			end
