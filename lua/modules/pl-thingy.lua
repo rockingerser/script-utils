@@ -115,6 +115,7 @@ local NumDraws = 0
 local DrawingBullets = false
 local LandmineEnabled = false
 local GrenadeEnabled = false
+local SpinToolsTarget = nil
 local JailLocations = {
 	CFrame.new(-321, 84, 2046),
 	CFrame.new(711, 102, 2373)
@@ -1045,6 +1046,7 @@ function CharacterAdded(NewCharacter)
 	local player = Players:GetPlayerFromCharacter(NewCharacter)
 	local Humanoid = NewCharacter:WaitForChild("Humanoid")
 	local Root = NewCharacter:WaitForChild("HumanoidRootPart")
+	local RightArm = NewCharacter:WaitForChild("Right Arm")
 	local Head = NewCharacter:WaitForChild("Head")
 	local Backpack = player:WaitForChild("Backpack")
 	local MySounds = {}
@@ -1055,13 +1057,13 @@ function CharacterAdded(NewCharacter)
 	local HealthChanged = nil
 	local NoGunsCheck = nil
 	local RootSoundAdded = nil
-
+	local Step = 0
 
 	local function ToolSoundAdded(Sound)
 		if player.Character == NewCharacter and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and not Sound.PlayOnRemove then
 			local Tool = Sound:FindFirstAncestorOfClass("Tool")
 
-			if Tool.Name ~= ShotgunName then
+			if Tool == nil or Tool.Name ~= ShotgunName then
 				return
 			end
 
@@ -1180,6 +1182,31 @@ function CharacterAdded(NewCharacter)
 			SpoofsOldVel = Root.AssemblyLinearVelocity
 			Root.AssemblyLinearVelocity = VelSpoofsCurrent.value
 		end
+		if SpinToolsTarget and Step % 2 == 0 then
+			local TargetHead = GetCharLimb("Head", false, SpinToolsTarget)
+
+			if TargetHead == nil then
+				return
+			end
+
+			local Tools = Backpack:GetChildren()
+			if NewCharacter:FindFirstChildOfClass("Tool") then
+				table.insert(Tools, NewCharacter:FindFirstChildOfClass("Tool"))
+			end
+
+			for _, Tool in ipairs(Tools) do
+				Tool.Parent = Backpack
+				Tool.Parent = NewCharacter
+				Tool.Handle.CustomPhysicalProperties = PhysicalProperties.new(.01, 0, 0)
+			end
+
+			for _, Grip in ipairs(RightArm:GetChildren()) do
+				if Grip.Name == "RightGrip" then
+					Grip.C1 = (RightArm.CFrame * Grip.C0:Inverse()):ToObjectSpace(TargetHead.CFrame)
+				end
+			end
+		end
+		Step += 1
 	end)
 
 	RunService:BindToRenderStep(Secret, 120, function()
@@ -2395,6 +2422,19 @@ function DisplayChat()
 	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Chat, true)
 end
 
+function SpinTools(player)
+	if InvalidPlayer(player) then
+		return
+	end
+
+	SpinToolsTarget = player
+	GetGuns()
+end
+
+function UnspinTools()
+	SpinToolsTarget = nil
+end
+
 Players.PlayerAdded:Connect(function(player)
 	if SystemMessagesEnabled then
 		Chat(string.format(Greet[RandGen:NextInteger(1, #Greet)], player.DisplayName), true)
@@ -2954,6 +2994,21 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "ungrenade",
     callback = Ungrenade
+})
+
+vm:CreateCommand({
+    name = "spintools",
+    callback = SpinTools,
+	args = {
+		{
+			name = "player"
+		}
+	}
+})
+
+vm:CreateCommand({
+    name = "unspintools",
+    callback = UnspinTools
 })
 
 Player.Chatted:Connect(function(msg)
