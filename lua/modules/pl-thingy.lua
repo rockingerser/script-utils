@@ -1189,6 +1189,8 @@ function CharacterAdded(NewCharacter)
 				return
 			end
 
+			NetOwner()
+
 			local Tools = Backpack:GetChildren()
 			if NewCharacter:FindFirstChildOfClass("Tool") then
 				table.insert(Tools, NewCharacter:FindFirstChildOfClass("Tool"))
@@ -1202,7 +1204,8 @@ function CharacterAdded(NewCharacter)
 
 			for _, Grip in ipairs(RightArm:GetChildren()) do
 				if Grip.Name == "RightGrip" then
-					Grip.C1 = (RightArm.CFrame * Grip.C0:Inverse()):ToObjectSpace(TargetHead.CFrame)
+					local RotInv = TargetHead.CFrame.Rotation:Inverse()
+					Grip.C1 = (RightArm.CFrame * CFrame.Angles(math.pi, 0, 0)):ToObjectSpace(CFrame.new(TargetHead.Position))
 				end
 			end
 		end
@@ -2002,11 +2005,15 @@ function AnnoyingSounds()
 
 		Step += 1
 
-		if Step % 3 == 0 then
-			if RandGen:NextInteger(0, 90) == 0 then
+		if Step % 15 == 3 then
+			if RandGen:NextInteger(0, 30) == 0 then
 				SoundNum += 1
 			end
-			RunService.PostSimulation:Wait()
+			if RandGen:NextInteger(0, 60) == 0 then
+				task.wait(9)
+			else
+				RunService.PostSimulation:Wait()
+			end
 		end
 	until not SpammingSounds
 end
@@ -2428,7 +2435,7 @@ function SpinTools(player)
 	end
 
 	SpinToolsTarget = player
-	GetGuns()
+	--GetGuns()
 end
 
 function UnspinTools()
