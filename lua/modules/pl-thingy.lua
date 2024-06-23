@@ -1051,6 +1051,7 @@ function CharacterAdded(NewCharacter)
 	local Backpack = player:WaitForChild("Backpack")
 	local MySounds = {}
 	local Tools = {}
+	local SpinningTools = {}
 	local SpoofsOldCFrame = nil
 	local SpoofsOldVel = nil
 	local Arrested = false
@@ -1204,8 +1205,18 @@ function CharacterAdded(NewCharacter)
 
 			for _, Grip in ipairs(RightArm:GetChildren()) do
 				if Grip.Name == "RightGrip" then
-					local RotInv = TargetHead.CFrame.Rotation:Inverse()
-					Grip.C1 = (RightArm.CFrame * CFrame.Angles(math.pi, 0, 0)):ToObjectSpace(CFrame.new(TargetHead.Position))
+					local WorldCFrame = TargetHead.CFrame * CFrame.Angles(
+						RandGen:NextNumber(-math.pi, math.pi),
+						RandGen:NextNumber(-math.pi, math.pi),
+						RandGen:NextNumber(-math.pi, math.pi)
+					) * CFrame.new(0, 0, RandGen:NextNumber(0, SpinToolsRange))
+
+					Grip.C1 = (WorldCFrame):ToObjectSpace(RightArm.CFrame * Grip.C0)
+
+					table.insert(SpinningTools, {
+						Grip,
+						WorldCFrame
+					})
 				end
 			end
 		end
@@ -1220,6 +1231,14 @@ function CharacterAdded(NewCharacter)
 		if SpoofsOldVel then
 			Root.AssemblyLinearVelocity = SpoofsOldVel
 			SpoofsOldVel = nil
+		end
+		while #SpinningTools > 0 do
+			local Grip, WorldCFrame = unpack(table.remove(SpinningTools, 1))
+			local Handle = Grip.Part1
+
+			Grip:Destroy()
+
+			Handle.CFrame = WorldCFrame
 		end
 	end)
 
@@ -1285,8 +1304,8 @@ function GetToolInBackpack(ToolName, player)
 	if Character and Character:FindFirstChild(ToolName) then
 		return Character[ToolName]
 	end
-	if Player:FindFirstChild("Backpack") then
-		return Player.Backpack:FindFirstChild(ToolName)
+	if player:FindFirstChild("Backpack") then
+		return player.Backpack:FindFirstChild(ToolName)
 	end
 end
 
@@ -1387,7 +1406,7 @@ function GetItem(ItemName)
 	end
 
 	SpoofPosition("getitemtask"..ItemName, GetItemPriority, Item.CFrame)
-	while Player:FindFirstChild("Backpack") ~= nil and Player.Backpack:FindFirstChild(ItemName) == nil and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
+	while not GetToolInBackpack(ItemName, Player) and Character.Parent == workspace and Item:IsDescendantOf(workspace) do
 		ItemHandler:InvokeServer(Item)
 	end
 	RunService.PostSimulation:Wait()
@@ -1985,6 +2004,7 @@ function AnnoyingSounds()
 
 	local SoundNum = 0
 	local Step = 0
+	local SpamAmount = 90
 
 	SpammingSounds = true
 
@@ -2005,12 +2025,13 @@ function AnnoyingSounds()
 
 		Step += 1
 
-		if Step % 15 == 3 then
+		if Step % SpamAmount == 0 then
 			if RandGen:NextInteger(0, 30) == 0 then
 				SoundNum += 1
+				SpamAmount = RandGen:NextInteger(2, 90)
 			end
-			if RandGen:NextInteger(0, 60) == 0 then
-				task.wait(9)
+			if RandGen:NextInteger(0, 30) == 0 then
+				task.wait(RandGen:NextNumber(0, 9))
 			else
 				RunService.PostSimulation:Wait()
 			end
@@ -2435,7 +2456,7 @@ function SpinTools(player)
 	end
 
 	SpinToolsTarget = player
-	--GetGuns()
+	GetGuns()
 end
 
 function UnspinTools()
