@@ -92,6 +92,7 @@ local GetCarPriority = 2700
 local GetItemPriority = 3000
 local TouchFlingPriority = 99
 local FlingPlayersVelPriority = 1500
+local SpinToolsRange = 9
 local PistolName = "M9"
 local TaserName = "Taser"
 local ShotgunName = "Remington 870"
@@ -1190,17 +1191,20 @@ function CharacterAdded(NewCharacter)
 				return
 			end
 
-			NetOwner()
-
 			local Tools = Backpack:GetChildren()
+			
 			if NewCharacter:FindFirstChildOfClass("Tool") then
-				table.insert(Tools, NewCharacter:FindFirstChildOfClass("Tool"))
+				for _, Tool in ipairs(NewCharacter:GetChildren()) do
+					if not Tool:IsA("Tool") then
+						continue
+					end
+					table.insert(Tools, Tool)
+				end
 			end
 
 			for _, Tool in ipairs(Tools) do
 				Tool.Parent = Backpack
 				Tool.Parent = NewCharacter
-				Tool.Handle.CustomPhysicalProperties = PhysicalProperties.new(.01, 0, 0)
 			end
 
 			for _, Grip in ipairs(RightArm:GetChildren()) do
@@ -1237,8 +1241,8 @@ function CharacterAdded(NewCharacter)
 			local Handle = Grip.Part1
 
 			Grip:Destroy()
-
-			Handle.CFrame = WorldCFrame
+			Handle:PivotTo(WorldCFrame)
+			Handle.AssemblyLinearVelocity = Vector3.zero
 		end
 	end)
 
@@ -1939,7 +1943,7 @@ function FreezeServer()
 	local Ak = GetToolInBackpack(AkName)
 
 	ReloadEvent:FireServer(Ak)
-	for i = 0, 9999 do
+	for i = 0, 99999 do
 		ShootEvent:FireServer({}, Ak)
 	end
 end
@@ -2461,6 +2465,35 @@ end
 
 function UnspinTools()
 	SpinToolsTarget = nil
+end
+
+-- Lag everyone in the server
+function Crash()
+	local Punch = GetCharLimb("Head").punchSound
+
+	for i = 0, 9999 do
+		SoundEvent:FireServer(Punch)
+	end
+end
+
+function SetSpinToolsRange(NewRange)
+	if typeof(NewRange) ~= "number" then
+		return
+	end
+
+	SpinToolsRange = NewRange
+end
+
+function OlKnife()
+	ReplicatedStorage.Tools["Crude Knife"]:Clone().Parent = Player.Backpack
+end
+
+function Stick()
+	ReplicatedStorage.Tools["Sharpened stick"]:Clone().Parent = Player.Backpack
+end
+
+function Mirror()
+	ReplicatedStorage.Tools["Extendo mirror"]:Clone().Parent = Player.Backpack
 end
 
 Players.PlayerAdded:Connect(function(player)
@@ -3037,6 +3070,36 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "unspintools",
     callback = UnspinTools
+})
+
+vm:CreateCommand({
+    name = "spintoolsrange",
+    callback = SetSpinToolsRange,
+    args = {
+        {
+            name = "newrange"
+        }
+    }
+})
+
+vm:CreateCommand({
+    name = "crash",
+    callback = Crash
+})
+
+vm:CreateCommand({
+    name = "olknife",
+    callback = OlKnife
+})
+
+vm:CreateCommand({
+    name = "stick",
+    callback = Stick
+})
+
+vm:CreateCommand({
+    name = "mirror",
+    callback = Mirror
 })
 
 Player.Chatted:Connect(function(msg)
