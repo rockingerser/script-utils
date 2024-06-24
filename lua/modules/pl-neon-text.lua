@@ -979,83 +979,70 @@ end
 function NeonText.new()
     local self = setmetatable({}, NeonText)
     self.CFrame = CFrame.new(0, 0, 0)
-    self.TextXAlignment = Enum.TextXAlignment.Left
-    self.TextYAlignment = Enum.TextYAlignment.Top
+    self.TextXAlignment = Enum.TextXAlignment.Center
+    self.TextYAlignment = Enum.TextYAlignment.Center
     self.Text = ""
     self.TextSize = 3
-    self.TextRenderScaleWidth = 0
-    self.RenderedBullets = {}
+    self.SpaceWidth = .333
+
     return self
 end
 
+function NeonText:GetTextWidth(Text)
+    local Width = 0
+
+    for Start, End in utf8.graphemes(Text) do
+        local Char = self.Text:sub(Start, End)
+
+        if Char == " " then
+            Width += self.SpaceWidth
+            continue
+        end
+
+        Width += (GlyphGenCframes[Char] or GlyphGenCframes["\00"]).width
+    end
+
+    return Width
+end
+
 function NeonText:Render()
-    self.RenderedBullets = nil
     if self.Text == "" then
         return
     end
-    self.RenderedBullets = {}
+
+    local RenderedBullets = {}
     local BulletId = 1
-    self.TextRenderScaleWidth = 0
+    local TextXOffset = 0
+
+    if self.TextXAlignment == Enum.TextXAlignment.Right then
+        TextXOffset = -self:GetTextWidth(self.Text)
+    elseif self.TextXAlignment == Enum.TextXAlignment.Center then
+        TextXOffset = self:GetTextWidth(self.Text) / -2
+    end
+
     for Start, End in utf8.graphemes(self.Text) do
-        if self.Text:sub(Start, End) == " " then
-            self.TextRenderScaleWidth += 1 / 3
+        local Char = self.Text:sub(Start, End)
+
+        if Char == " " then
+            TextXOffset += self.SpaceWidth
             continue
         end
-        local Glyph = GlyphGenCframes[self.Text:sub(Start, End)] or GlyphGenCframes["\00"]
+
+        local Glyph = GlyphGenCframes[Char] or GlyphGenCframes["\00"]
 
         for Key, Line in ipairs(Glyph.vertex) do
-            self.RenderedBullets[BulletId] = {
+            RenderedBullets[BulletId] = {
                 RayObject = Ray.new(Vector3.zero, Vector3.zero),
                 Distance = Line.Distance * self.TextSize,
-                Cframe = self.CFrame * CFrame.new((Line.Position + Vector3.xAxis * self.TextRenderScaleWidth) * self.TextSize) * Line.Cframe
+                Cframe = self.CFrame * CFrame.new((Line.Position + Vector3.xAxis * TextXOffset) * self.TextSize) * Line.Cframe
             }
             BulletId += 1
         end
-        self.TextRenderScaleWidth += Glyph.width
+        
+        TextXOffset += Glyph.width
     end
+
+    return RenderedBullets
 end
-
-function NeonText:SetCFrame(newCframe)
-    local oldCframe = self.CFrame
-    self.CFrame = newCframe
-    print(#self.RenderedBullets)
-    if self.RenderedBullets == nil then
-        return
-    end
-    for _, Bullet in pairs(self.RenderedBullets) do
-        Bullet.Cframe *= newCframe * oldCframe:Inverse()
-        print(Bullet.Cframe.Position)
-        return
-    end
-end
-
-function NeonText:Draw()
-    -- Draw Text on player's screen
-    for _, Connection in pairs(getconnections(ReplicateEvent.OnClientEvent)) do
-        Connection:Fire(self.RenderedBullets)
-    end
-
-    local Gun = getGun()
-    if Gun then
-        ShootEvent:FireServer(self.RenderedBullets, Gun)
-        Reload:FireServer(Gun)
-    end
-end
-
---------------------------- test
---[[
-local neonText = NeonText.new()
-neonText.Text = "soy la primera persona en crear este script oh yeahh"
-neonText.CFrame = Player.Character.Head.CFrame * CFrame.new(0, 0, 0)
-neonText.TextSize = 1.5
-neonText:Render()
-
-while task.wait(.36) do
-    if Player.Character:FindFirstChild("Head") then
-        --print("Ok")
-        neonText:Draw()
-    end
-end
-]]
 
 return NeonText

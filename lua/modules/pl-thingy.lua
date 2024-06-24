@@ -65,7 +65,6 @@ local AntiarrestEnabled = false
 local InvisibleEnabled = false
 local InfiniteJumpEnabled = false
 local TouchFlingEnabled = false
-local FreezingServer = false
 local LaggingEveryone = false
 local SpamEnabled = false
 local SpammingSounds = false
@@ -73,9 +72,7 @@ local RestoringState = false
 local InfiniteYieldLoaded = false
 local DexLoaded = false
 local Secret =  HttpService:GenerateGUID()
-local NeonTxtIns = nil
 local SpamSentences = nil
-local TargetBillboardTextPlayer = nil
 local FlyLinearVel = nil
 local FlyVecForce = nil
 local FlyAlignOr = nil
@@ -113,6 +110,7 @@ local Landmines = {}
 local Grenades = {}
 local SpamDrawings = nil
 local NumDraws = 0
+local BillTxtIns = nil
 local DrawingBullets = false
 local LandmineEnabled = false
 local GrenadeEnabled = false
@@ -128,7 +126,7 @@ local TargetList = {
 	Oneshot = {},
 	NoGuns = {},
 	LoopKilling = {},
-	Outline = {}
+	Outline = {},
 }
 local DefaultState = {
 	pistol = false,
@@ -245,11 +243,15 @@ RayPartBullet.Transparency = .5
 RayPartBullet.CanCollide = false
 RayPartBullet.Anchored = true
 
-coroutine.wrap(function()
-	task.wait(12)
-	NeonTxtIns = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/pl-neon-text.lua"))().new()
-	NeonTxtIns.TextSize = 1.5
-end)()
+function NeonText()
+	local neon_text = loadstring(game:HttpGet("https://raw.githubusercontent.com/rockingerser/script-utils/main/lua/modules/pl-neon-text.lua"))()
+
+	function NeonText()
+		return neon_text
+	end
+
+	return neon_text
+end
 
 for _, Spawner in ipairs(PrisonItems.buttons:GetChildren()) do
 	if Spawner.Name == "Car Spawner" then
@@ -1785,36 +1787,20 @@ function LoopkillPlayers(players)
 end
 
 function BillboardTextPlayer(player, text)
-	if NeonTxtIns == nil then
+	if InvalidPlayer(player) or typeof(text) ~= "string" or text:match("%S") then
+		TargetBillboardTextPlayer = nil
 		return
 	end
 
-	print(player)
-	print(text)
-	
-	TargetBillboardTextPlayer = player
-	NeonTxtIns.Text = text
-end
+	if BillTxtIns == nil then
+		BillTxtIns = NeonText().new()
+		BillTxtIns.TextSize = 1.5
+		BillTxtIns.TextXAlignment = Enum.TextXAlignment.Center
+	end
 
-coroutine.wrap(function()
-		while true do
-			task.wait(DrawYield)
-			if typeof(TargetBillboardTextPlayer) ~= "Instance" or not TargetBillboardTextPlayer:IsA("Player") then
-				continue
-			end
-			local TargetCharacter = TargetBillboardTextPlayer.Character
-			if TargetCharacter == nil then
-				continue
-			end
-			local TargetHead = TargetCharacter:FindFirstChild("Head")
-			if TargetHead == nil then
-				continue
-			end
-			NeonTxtIns.CFrame = TargetHead.CFrame * CFrame.new(0, 3, 0)
-			pcall(NeonTxtIns.Render, NeonTxtIns)
-			Draw3D(NeonTxtIns.RenderedBullets)
-		end
-end)()
+	TargetBillboardTextPlayer = player
+	BillTxtIns.Text = text
+end
 
 function UnLoopkillPlayers(players)
 	Remove(TargetList.LoopKilling, players)
@@ -2472,6 +2458,15 @@ coroutine.wrap(function()
 
 		for _, Grenade in ipairs(Grenades) do
 			Draw3D(Draw3DGenerateBlock(Grenade.CFrame, Grenade.Size))
+		end
+
+		if TargetBillboardTextPlayer then
+			local TargetHead = GetCharLimb("Head", false, TargetBillboardTextPlayer)
+
+			if TargetHead then
+				BillTxtIns.CFrame = TargetHead.CFrame * CFrame.new(0, BillTxtIns.TextSize, 0)
+				Draw3D(BillTxtIns:Render())
+			end
 		end
 	end
 end)()
