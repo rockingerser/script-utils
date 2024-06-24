@@ -22,6 +22,7 @@ local AdminPadding = Instance.new("UIPadding")
 local SpoofIndicatorPart = Instance.new("Part")
 local SpoofIndicatorPartOutline = Instance.new("SelectionBox")
 local RayPartBullet = Instance.new("Part")
+local BeforeDrawStep = Instance.new("BindableEvent")
 local Remote = workspace.Remote
 local PrisonItems = workspace.Prison_ITEMS
 local Doors = workspace.Doors
@@ -968,59 +969,69 @@ function UnspoofVelocity(Name)
 end
 
 function Draw3D(Data)
-	local ShouldBeginDraw = #DrawingQueue == 0
 	for _, Bullet in ipairs(Data) do
 		table.insert(DrawingQueue, Bullet)
 	end
+end
 
-	if ShouldBeginDraw and not DrawingBullets then
-		DrawingBullets = true
-		coroutine.wrap(function()
-			while true do
-				if os.clock() - ServerClockTimeRefresh > 1.5 then
-					Lighting:GetPropertyChangedSignal("ClockTime"):Wait()
-				end
+coroutine.wrap(function()
+	local EmptyRedraws = 4
+	while true do
+		if EmptyRedraws > 3 then
+			task.wait(3)
+		end
 
-				while GetToolInBackpack(DrawCurrGun) == nil do
-					GetItem(DrawCurrGun)
-				end
+		BeforeDrawStep:Fire()
+		local ShouldDraw = #DrawingQueue > 0
 
-				local Gun = GetToolInBackpack(DrawCurrGun)
+		if ShouldDraw then
+			if os.clock() - ServerClockTimeRefresh > 1.5 then
+				Lighting:GetPropertyChangedSignal("ClockTime"):Wait()
+			end
 
-				for _, Bullet in ipairs(DrawingQueue) do
-					if Bullet.Cframe and Bullet.Distance then
-						local RayPart = RayPartBullet:Clone()
-						RayPart.CFrame = Bullet.Cframe
-						RayPart.Size = Vector3.new(.12, .12, Bullet.Distance)
-						RayPart.Parent = workspace.Terrain
-					end
-				end
-				ShootEvent:FireServer(DrawingQueue, Gun)
+			while GetToolInBackpack(DrawCurrGun) == nil do
+				GetItem(DrawCurrGun)
+			end
+		end
 
-				-- Prevent lagging the server
-				if NumDraws % 15 == 14 then
-					ReloadEvent:FireServer(Gun)
-					if DrawCurrGun == PistolName then
-						DrawCurrGun = AkName
-					else
-						DrawCurrGun = PistolName
-					end
-				end
+		local Gun = GetToolInBackpack(DrawCurrGun)
 
-				NumDraws += 1
-				table.clear(DrawingQueue)
-				task.wait(DrawYield)
-
-				workspace.Terrain:ClearAllChildren()
-
-				if #DrawingQueue == 0 then
-					DrawingBullets = false
-					break
+		if ShouldDraw then
+			for _, Bullet in ipairs(DrawingQueue) do
+				if Bullet.Cframe and Bullet.Distance then
+					local RayPart = RayPartBullet:Clone()
+					RayPart.CFrame = Bullet.Cframe
+					RayPart.Size = Vector3.new(.12, .12, Bullet.Distance)
+					RayPart.Parent = workspace.Terrain
 				end
 			end
-		end)()
+		
+			ShootEvent:FireServer(DrawingQueue, Gun)
+			EmptyRedraws = 0
+			NumDraws += 1
+		end
+
+		-- Prevent lagging the server
+		if NumDraws > 14 then
+			ReloadEvent:FireServer(Gun)
+			NumDraws = 0
+			if DrawCurrGun == PistolName then
+				DrawCurrGun = AkName
+			else
+				DrawCurrGun = PistolName
+			end
+		end
+
+		table.clear(DrawingQueue)
+		task.wait(DrawYield)
+
+		workspace.Terrain:ClearAllChildren()
+
+		if #DrawingQueue == 0 then
+			EmptyRedraws += 1
+		end
 	end
-end
+end)()
 
 function Draw3DGenerateBlock(Cframe, Size, Hit)
 	local HalfSize = Size / 2
@@ -1787,7 +1798,7 @@ function LoopkillPlayers(players)
 end
 
 function BillboardTextPlayer(player, text)
-	if InvalidPlayer(player) or typeof(text) ~= "string" or text:match("%S") then
+	if InvalidPlayer(player) or typeof(text) ~= "string" or text == "" then
 		TargetBillboardTextPlayer = nil
 		return
 	end
@@ -2215,7 +2226,7 @@ function CreateJeff(Size, Name)
 	local Humanoid = Character.Humanoid
 	Humanoid.MaxHealth = 300
 	Humanoid.Health = 300
-	Humanoid.WalkSpeed = 6
+	Humanoid.WalkSpeed = 9
 
 	JeffDefaultBehavior(Humanoid)
 
@@ -2401,8 +2412,7 @@ function SetFlySpeed(NewSpeed)
 	end
 end
 
-coroutine.wrap(function()
-	while task.wait(DrawYield) do
+BeforeDrawStep.Event:Connect(function()
 		for _, Turret in pairs(Turrets) do
 			local ShootStart = Turret[1].CFrame * CFrame.new(0, 3.75, 0)
 			local Delta = os.clock() - Turret[2]
@@ -2464,12 +2474,11 @@ coroutine.wrap(function()
 			local TargetHead = GetCharLimb("Head", false, TargetBillboardTextPlayer)
 
 			if TargetHead then
-				BillTxtIns.CFrame = TargetHead.CFrame * CFrame.new(0, BillTxtIns.TextSize, 0)
+				BillTxtIns.CFrame = TargetHead.CFrame * CFrame.new(0, 3, 0)
 				Draw3D(BillTxtIns:Render())
 			end
 		end
-	end
-end)()
+	end)
 
 function GetLandmine()
     local Tool = Instance.new("Tool")
