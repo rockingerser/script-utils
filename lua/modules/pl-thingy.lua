@@ -105,7 +105,7 @@ local DrawCurrGun = PistolName
 local BulletName = "RayPart"
 local ChattedDebounce = false
 local FlingForce = 124e7
-local DrawYield = .24
+local DrawYield = .27
 local CarSpawners = {}
 local SpamSounds = {}
 local Npcs = {}
@@ -197,40 +197,40 @@ local LookAlikes = {
 	z = "ᴢ"
 }
 local Greet = {
-    "Welcome to the game, %s!",
-    "Glad to have you here, %s!",
-    "Hey %s, get ready for an adventure!",
-    "Look who's here! Welcome, %s!",
-    "Join the fun, %s!",
-    "It's great to see you, %s!",
-    "Let's have a great game, %s!",
-    "Greetings, %s!",
-    "Hope you enjoy your time here, %s!",
-    "Welcome aboard, %s!"
+    "¡Bienvenido al juego, %s!",
+    "¡Encantado de tenerte aquí, %s!",
+    "¡Hola %s, prepárate para una aventura!",
+    "¡Mira quién está aquí! ¡Bienvenido, %s!",
+    "¡Únete a la diversión, %s!",
+    "¡Es genial verte, %s!",
+    "¡Tengamos un gran juego, %s!",
+    "¡Saludos, %s!",
+    "¡Espero que disfrutes tu tiempo aquí, %s!",
+    "¡Bienvenido a bordo, %s!"
 }
 local Bye = {
-    "Oh no, %s has left the game.",
-    "We'll miss you, %s.",
-    "Goodbye, %s. Hope to see you soon!",
-    "Sad to see you go, %s.",
-    "Farewell, %s.",
-    "See you next time, %s.",
-    "Take care, %s.",
-    "Thanks for playing, %s!",
-    "Until next time, %s.",
-    "Safe travels, %s."
+    "Oh no, %s ha dejado el juego.",
+    "Te extrañaremos, %s.",
+    "Adiós, %s. ¡Espero verte pronto!",
+    "Es triste verte ir, %s.",
+    "Adiós, %s.",
+    "Nos vemos la próxima vez, %s.",
+    "Cuídate, %s.",
+    "Gracias por jugar, %s!",
+    "Hasta la próxima, %s.",
+    "Viajes seguros, %s."
 }
 local Death = {
-    "Rest in peace, %s.",
-    "%s has fallen in battle.",
-    "Oh no, %s has died.",
-    "%s met their end.",
-    "We mourn the loss of %s.",
-    "%s has been defeated.",
-    "Alas, poor %s is no more.",
-    "Farewell, brave %s.",
-    "%s fought valiantly but has perished.",
-    "%s has been slain."
+    "Descanse en paz, %s.",
+    "%s ha caído en batalla.",
+    "Oh no, %s ha muerto.",
+    "%s encontró su fin.",
+    "Lamentamos la pérdida de %s.",
+    "%s ha sido derrotado.",
+    "Ay, pobre %s ya no está.",
+    "Adiós, valiente %s.",
+    "%s luchó valientemente pero ha perecido.",
+    "%s ha sido asesinado."
 }
 local SystemMessagesEnabled = false
 local CurrentState = DefaultState
@@ -476,25 +476,85 @@ end
 
 function NpcDefaultBehavior(Humanoid)
 	local Character = Humanoid.Parent
+
+	EveryTouched(Character, function(Hit)
+		if Hit.Name == BulletName then
+			Humanoid:TakeDamage(9)
+			Hit.CanTouch = false
+		end
+	end)
+end
+
+function EveryTouched(Character, Touched)
 	for _, Part in ipairs(Character:GetChildren()) do
 		if Part:IsA("BasePart") then
-			Part.Touched:Connect(function(Hit)
-				if Hit.Name == BulletName then
-					Humanoid:TakeDamage(9)
-					Hit.CanTouch = false
-				end
-			end)
+			Part.Touched:Connect(Touched)
 		end
 	end
 end
 
-function JeffTheKillerStep(Humanoid)
-	local Closest = 300
-	local TargetRoot = nil
-	local TargetHum = nil
+function JeffDefaultBehavior(Humanoid)
+	local Character = Humanoid.Parent
+	local Animator = Humanoid.Animator
+	local SoccerWalkAnimation = Instance.new("Animation")
+	SoccerWalkAnimation.AnimationId = "rbxassetid://248335946"
+	local SoccerWalkTrack = Animator:LoadAnimation(SoccerWalkAnimation)
+	SoccerWalkTrack:Play()
 
-	for _, player in ipairs(Players:GetPlayers()) do
+	EveryTouched(Character, function(Hit)
+		local TargetChar = Hit.Parent
+		local Humanoid = TargetChar:FindFirstChildOfClass("Humanoid")
+
+		if TargetChar == Character or Humanoid == nil or Humanoid:GetState() == Enum.HumanoidStateType.Dead then
+			return
+		end
+
+		Draw3D(Draw3DBullet(Hit.Position, Hit.Position, Hit))--[[{
+			RayObject = Ray.new(Vector3.zero, Vector3.zero),
+			Hit = Hit
+		})]]
+	end)
+end
+
+function JeffWalkToNearestPlayer(Humanoid)
+	local Root = Humanoid.Parent.HumanoidRootPart
+	local Nearest = 300
+	local NearestRoot = nil
+
+	for _, player in ipairs(PlayersInRange(Root.Position, 300)) do
+		if player.Team == Player.Team or player.Character:FindFirstChild("Humanoid") == nil or player.Character.Humanoid:GetState() == Enum.HumanoidStateType.Dead then
+			continue
+		end
+
+		local TargetChar = player.Character
+		local TargetRoot = TargetChar.HumanoidRootPart
+		local Dist = (Root.Position - TargetRoot.Position).Magnitude
+
+		if Dist < Nearest and JeffCheckWalkable(Humanoid, TargetRoot) then
+			Nearest = Dist
+			NearestRoot = TargetRoot
+		end
 	end
+
+	if not NearestRoot then
+		return true
+	end
+
+	Humanoid:MoveTo(NearestRoot.Position, NearestRoot)
+end
+
+function JeffCheckWalkable(Humanoid, TargetRoot)
+	local Root = Humanoid.Parent.HumanoidRootPart
+	local Params = RaycastParams.new()
+
+	Params.FilterType = Enum.RaycastFilterType.Exclude
+	Params.RespectCanCollide = true
+	Params.FilterDescendantsInstances = {
+		TargetRoot.Parent,
+		Humanoid.Parent
+	}
+
+	return workspace:Raycast(Root.Position, TargetRoot.Position - Root.Position, Params) == nil
 end
 
 function PlayersInRange(Position, Distance)
@@ -1060,6 +1120,8 @@ function CharacterAdded(NewCharacter)
 	local NoGunsCheck = nil
 	local RootSoundAdded = nil
 	local Step = 0
+
+	Humanoid.BreakJointsOnDeath = false
 
 	local function ToolSoundAdded(Sound)
 		if player.Character == NewCharacter and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and not Sound.PlayOnRemove then
@@ -1933,8 +1995,14 @@ function UntouchFling()
 	TouchFlingEnabled = false
 end
 
-function FreezeServer()
+function FreezeServer(Timeout)
 	NetworkClient:SetOutgoingKBPSLimit(999999999)
+
+	if typeof(Timeout) == "number" then
+		Chat("¡¡¡ESTE SERVIDOR SERÁ HECHO PAPILLA EN DENTRO DE "..Timeout.." SEGUNDOS!!!", true)
+		task.wait(Timeout)
+		Chat("EL SERVIDOR MORIRÁ PRONTO... ADIÓS A TODOS", true)
+	end
 	
 	while GetToolInBackpack(AkName) == nil do
 		GetItem(AkName)
@@ -1943,7 +2011,8 @@ function FreezeServer()
 	local Ak = GetToolInBackpack(AkName)
 
 	ReloadEvent:FireServer(Ak)
-	for i = 0, 99999 do
+	task.wait()
+	for i = 0, 39999 do
 		ShootEvent:FireServer({}, Ak)
 	end
 end
@@ -2080,12 +2149,12 @@ function RemoveTurrets()
 	end
 end
 
-function CreateNpc(Size, Name)
+function BaseNpc(Size, Name)
 	RemoveNpc(Name)
 
 	Name = Name or HttpService:GenerateGUID()
 
-	local Character = CreateDummy(Size or 1)
+	local Character = CreateDummy(Size)
 	local Humanoid = Character.Humanoid
 
 	Npcs[Name] = {
@@ -2101,9 +2170,33 @@ function CreateNpc(Size, Name)
 	end)
 
 	NpcDefaultBehavior(Humanoid)
+
+	return Character
+end
+
+function CreateNpc(Size, Name)
+	local Character = BaseNpc(Size or 1, Name)
+
 	while Character.Parent == workspace do
 		task.wait(.9)
 		NpcRandomAction(Humanoid)
+	end
+end
+
+function CreateJeff(Size, Name)
+	local Character = BaseNpc(Size or 2, Name)
+	local Humanoid = Character.Humanoid
+	Humanoid.MaxHealth = 300
+	Humanoid.Health = 300
+	Humanoid.Walkspeed = 12
+
+	JeffDefaultBehavior(Humanoid)
+
+	while Character.Parent == workspace do
+		task.wait(.9)
+		if Humanoid:GetState() == Enum.HumanoidStateType.Seated or JeffWalkToNearestPlayer(Humanoid) then
+			NpcRandomAction(Humanoid)
+		end
 	end
 end
 
@@ -2899,6 +2992,19 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "removenpcs",
     callback = RemoveNpcs
+})
+
+vm:CreateCommand({
+    name = "jeff",
+    callback = CreateJeff,
+    args = {
+        {
+            name = "size"
+        },
+		{
+			name = "name"
+		}
+    }
 })
 
 vm:CreateCommand({
