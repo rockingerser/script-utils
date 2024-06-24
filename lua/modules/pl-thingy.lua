@@ -117,6 +117,7 @@ local DrawingBullets = false
 local LandmineEnabled = false
 local GrenadeEnabled = false
 local SpinToolsTarget = nil
+local ServerClockTimeRefresh = 0
 local JailLocations = {
 	CFrame.new(-321, 84, 2046),
 	CFrame.new(711, 102, 2373)
@@ -356,7 +357,7 @@ function CreateDummy(Size)
 	Character.Name = HttpService:GenerateGUID()
 
 	Humanoid.RigType = Enum.HumanoidRigType.R6
-	Humanoid.HipHeight = 1
+	Humanoid.HipHeight = 0
 
 	Animator.Parent = Humanoid
 
@@ -416,14 +417,14 @@ function CreateDummy(Size)
 	RightShoulder.Part0 = Torso
 	RightShoulder.Part1 = RightArm
 	RightShoulder.C0 = CFrame.new(Size, Size, 0)
-	RightShoulder.C1 = CFrame.new(-.5 * Size, Size, 0)
+	RightShoulder.C1 = CFrame.new(-.5 * Size, Size, 0) * CFrame.Angles(0, math.pi, 0)
 	RightShoulder.Parent = Torso
 
 	LeftShoulder.Name = "Left Shoulder"
 	LeftShoulder.Part0 = Torso
 	LeftShoulder.Part1 = LeftArm
 	LeftShoulder.C0 = CFrame.new(-Size, Size, 0)
-	LeftShoulder.C1 = CFrame.new(.5 * Size, Size, 0)
+	LeftShoulder.C1 = CFrame.new(.5 * Size, Size, 0) * CFrame.Angles(0, math.pi, 0)
 	LeftShoulder.Parent = Torso
 
 	RightHip.Name = "Right Hip"
@@ -938,6 +939,10 @@ function Draw3D(Data)
 		DrawingBullets = true
 		coroutine.wrap(function()
 			while true do
+				if os.clock() - ServerClockTimeRefresh > 1.5 then
+					Lighting:GetPropertyChangedSignal("ClockTime"):Wait()
+				end
+
 				while GetToolInBackpack(DrawCurrGun) == nil do
 					GetItem(DrawCurrGun)
 				end
@@ -2188,7 +2193,7 @@ function CreateJeff(Size, Name)
 	local Humanoid = Character.Humanoid
 	Humanoid.MaxHealth = 300
 	Humanoid.Health = 300
-	Humanoid.Walkspeed = 12
+	Humanoid.WalkSpeed = 9
 
 	JeffDefaultBehavior(Humanoid)
 
@@ -3263,6 +3268,7 @@ coroutine.wrap(function()
 end)()
 
 Lighting:GetPropertyChangedSignal("ClockTime"):Connect(function()
+	ServerClockTimeRefresh = os.clock()
 	if LaggingServer and RandGen:NextInteger(3, 9) == 3 then
 		while GetToolInBackpack(AkName) == nil do
 			GetItem(AkName)
