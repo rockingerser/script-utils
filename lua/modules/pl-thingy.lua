@@ -362,19 +362,16 @@ function CreateDummy(Size)
 	Animator.Parent = Humanoid
 
 	Head.Name = "Head"
-	Head.Position = Vector3.new(0, 1.5 * Size, 0)
 	Head.Size = Vector3.one * Size
 	Head.Transparency = 1
 	Head.Parent = Character
 
 	RightArm.Name = "Right Arm"
-	RightArm.Position = Vector3.new(1.5 * Size, 0, 0)
 	RightArm.Size = Vector3.new(1, 2, 1) * Size
 	RightArm.Transparency = 1
 	RightArm.Parent = Character
 
 	LeftArm.Name = "Left Arm"
-	LeftArm.Position = Vector3.new(-1.5 * Size, 0, 0)
 	LeftArm.Size = Vector3.new(1, 2, 1) * Size
 	LeftArm.Transparency = 1
 	LeftArm.Parent = Character
@@ -391,7 +388,6 @@ function CreateDummy(Size)
 	Character.PrimaryPart = HumanoidRootPart
 
 	RightLeg.Name = "Right Leg"
-	RightLeg.Position = Vector3.new(.5, -2, 0) * Size
 	RightLeg.Size = Vector3.new(1, 2, 1) * Size
 	RightLeg.Transparency = 1
 	RightLeg.Parent = Character
@@ -416,29 +412,69 @@ function CreateDummy(Size)
 	RightShoulder.Name = "Right Shoulder"
 	RightShoulder.Part0 = Torso
 	RightShoulder.Part1 = RightArm
-	RightShoulder.C0 = CFrame.new(Size, Size, 0)
-	RightShoulder.C1 = CFrame.new(-.5 * Size, Size, 0) * CFrame.Angles(0, math.pi, 0)
+	RightShoulder.C0 = CFrame.new(
+		Size, .5 * Size, 0,
+		0, 0, 1,
+		0, 1, 0,
+		-1, 0, 0
+	)
+	RightShoulder.C1 = CFrame.new(
+		-.5 * Size, .5 * Size, 0,
+		0, 0, 1,
+		0, 1, 0,
+		-1, 0, 0
+	)
 	RightShoulder.Parent = Torso
 
 	LeftShoulder.Name = "Left Shoulder"
 	LeftShoulder.Part0 = Torso
 	LeftShoulder.Part1 = LeftArm
-	LeftShoulder.C0 = CFrame.new(-Size, Size, 0)
-	LeftShoulder.C1 = CFrame.new(.5 * Size, Size, 0) * CFrame.Angles(0, math.pi, 0)
+	LeftShoulder.C0 = CFrame.new(
+		-Size, .5 * Size, 0,
+		0, 0, -1,
+		0, 1, 0,
+		1, 0, 0
+	)
+	LeftShoulder.C1 = CFrame.new(
+		.5 * Size, .5 * Size, 0,
+		0, 0, -1,
+		0, 1, 0,
+		1, 0, 0
+	)
 	LeftShoulder.Parent = Torso
 
 	RightHip.Name = "Right Hip"
 	RightHip.Part0 = Torso
 	RightHip.Part1 = RightLeg
-	RightHip.C0 = CFrame.new(Size, -Size, 0)
-	RightHip.C1 = CFrame.new(.5 * Size, Size, 0)
+	RightHip.C0 = CFrame.new(
+		Size, -Size, 0,
+		0, 0, 1,
+		0, 1, 0,
+		-1, 0, 0
+	)
+	RightHip.C1 = CFrame.new(
+		.5 * Size, Size, 0,
+		0, 0, 1,
+		0, 1, 0,
+		-1, 0, 0
+	)
 	RightHip.Parent = Torso
 
 	LeftHip.Name = "Left Hip"
 	LeftHip.Part0 = Torso
 	LeftHip.Part1 = LeftLeg
-	LeftHip.C0 = CFrame.new(-Size, -Size, 0)
-	LeftHip.C1 = CFrame.new(-.5 * Size, Size, 0)
+	LeftHip.C0 = CFrame.new(
+		-Size, -Size, 0,
+		0, 0, -1,
+		0, 1, 0,
+		1, 0, 0
+	)
+	LeftHip.C1 = CFrame.new(
+		-.5 * Size, Size, 0,
+		0, 0, -1,
+		0, 1, 0,
+		1, 0, 0
+	)
 	LeftHip.Parent = Torso
 
 	Humanoid.Parent = Character
@@ -498,7 +534,7 @@ function JeffDefaultBehavior(Humanoid)
 	local Character = Humanoid.Parent
 	local Animator = Humanoid.Animator
 	local SoccerWalkAnimation = Instance.new("Animation")
-	SoccerWalkAnimation.AnimationId = "rbxassetid://248335946"
+	SoccerWalkAnimation.AnimationId = "rbxassetid://148831003"
 	local SoccerWalkTrack = Animator:LoadAnimation(SoccerWalkAnimation)
 	SoccerWalkTrack:Play()
 
@@ -2193,7 +2229,7 @@ function CreateJeff(Size, Name)
 	local Humanoid = Character.Humanoid
 	Humanoid.MaxHealth = 300
 	Humanoid.Health = 300
-	Humanoid.WalkSpeed = 9
+	Humanoid.WalkSpeed = 6
 
 	JeffDefaultBehavior(Humanoid)
 
