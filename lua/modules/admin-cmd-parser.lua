@@ -139,7 +139,7 @@ function Parser:ParseArg()
     if self.script:sub(self.i, self.i):find("[A-Za-z]") then
         local command = self:ParseCommand(self.i)
         local cmdArgs = self:ParseArgs(command, true)
-        parsed = self.VM.call(command.name, unpack(cmdArgs))
+        parsed = self.VM.call(command.name[1], unpack(cmdArgs))
     else
         local init = self.i
         parsed = self:ParseNumber(init) or self:ParseStringData(init) or self:ParseArrayTableArgs(init) or self:ParsePlName(init)
@@ -196,7 +196,7 @@ function Parser:ParseString(script)
             end
             local command = self:ParseCommand(self.i)
             local cmdArgs = self:ParseArgs(command)
-            table.insert(output, self.VM.call(command.name, unpack(cmdArgs)))
+            table.insert(output, self.VM.call(command.name[1], unpack(cmdArgs)))
         else
             self.error(string.format("syntaxerror: Expected %q", self.CmdPrefix), self.i)
         end

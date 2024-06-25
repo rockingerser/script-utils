@@ -2785,7 +2785,7 @@ vm:CreateCommand({
 			name = "quien"
 		}
 	},
-	description = "matar/kill/oof <jugador•equipo•[jugador•equipo ... jugador•equipo]> Mata al jugador o equipo especificado. Puedes matar a una lista de jugadores o equipos (%smatar [<jugador1> <jugador2> guardias])"
+	description = "matar/kill/oof <jugador•equipo•[jugador•equipo ... jugador•equipo]> | Mata al jugador o equipo especificado. Puedes matar a una lista de jugadores o equipos (%smatar [<jugador1> <jugador2> guardias])"
 })
 
 vm:CreateCommand({
@@ -2796,15 +2796,15 @@ vm:CreateCommand({
 			name = "quien"
 		}
 	},
-	description = "bombanuclear/nuke/addnuke <jugador•equipo•[jugador•equipo ...]> Convierte al jugador o equipo en una bomba nuclear que al morir matará a todos los jugadores"
+	description = "bombanuclear/nuke/addnuke <jugador•equipo•[jugador•equipo ... jugador•equipo]> | Convierte al jugador o equipo en una bomba nuclear que al morir matará a todos los jugadores"
 })
 
 vm:CreateCommand({
-	name = "removenuke",
+	name = { "quitarbombanuclear", "removenuke", "unnuke", "nonuke" },
 	callback = RemoveNuke,
 	args = {
 		{
-			name = "players"
+			name = "quien"
 		}
 	}
 })
@@ -3456,6 +3456,8 @@ AdminCmdBox.FocusLost:Connect(function(EnterPressed)
 	if ok then
 		AdminCmdBox.Text = ""
 		vm:Execute(code)
+	else
+		warn(code)
 	end
 end)
 
