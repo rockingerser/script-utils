@@ -536,6 +536,7 @@ end
 function JeffDefaultBehavior(Humanoid)
 	local Character = Humanoid.Parent
 	local Animator = Humanoid.Animator
+	local HitDebounce = {}
 	local SoccerWalkAnimation = Instance.new("Animation")
 	SoccerWalkAnimation.AnimationId = "rbxassetid://148831003"
 	local SoccerWalkTrack = Animator:LoadAnimation(SoccerWalkAnimation)
@@ -545,14 +546,15 @@ function JeffDefaultBehavior(Humanoid)
 		local TargetChar = Hit.Parent
 		local Humanoid = TargetChar:FindFirstChildOfClass("Humanoid")
 
-		if TargetChar == Character or Humanoid == nil or Humanoid:GetState() == Enum.HumanoidStateType.Dead then
+		if table.find(HitDebounce, TargetChar) or TargetChar == Character or Humanoid == nil or Humanoid:GetState() == Enum.HumanoidStateType.Dead then
 			return
 		end
 
-		Draw3D(Draw3DBullet(Hit.Position, Hit.Position, Hit))--[[{
-			RayObject = Ray.new(Vector3.zero, Vector3.zero),
-			Hit = Hit
-		})]]
+		Draw3D(Draw3DBullet(Hit.Position, Hit.Position, Hit))
+
+		table.insert(HitDebounce, TargetChar)
+		task.wait(.3)
+		table.remove(HitDebounce, table.find(HitDebounce, TargetChar))
 	end)
 end
 
@@ -2200,7 +2202,7 @@ function BaseNpc(Size, Name)
 	}
 
 	Character.Parent = workspace
-	Character:PivotTo(LocalRoot.CFrame * CFrame.new(0, 5, 0))
+	Character:PivotTo(LocalRoot.CFrame * CFrame.new(0, 5 * Size, 0))
 
 	Humanoid.Died:Once(function()
 		task.wait(3)
@@ -2226,16 +2228,38 @@ function CreateJeff(Size, Name)
 	local Humanoid = Character.Humanoid
 	Humanoid.MaxHealth = 300
 	Humanoid.Health = 300
-	Humanoid.WalkSpeed = 9
+	Humanoid.WalkSpeed = 12
 
 	JeffDefaultBehavior(Humanoid)
 
-	while Character.Parent == workspace do
-		task.wait(.9)
-		if Humanoid:GetState() == Enum.HumanoidStateType.Seated or JeffWalkToNearestPlayer(Humanoid) then
-			NpcRandomAction(Humanoid)
+	coroutine.wrap(function()
+		while Character.Parent == workspace do
+			task.wait(.9)
+			if Humanoid:GetState() == Enum.HumanoidStateType.Seated or JeffWalkToNearestPlayer(Humanoid) then
+				NpcRandomAction(Humanoid)
+			end
 		end
+	end)()
+
+	return Character
+end
+
+function CreateFlea(Size, Name)
+	Size = Size or 1
+	local Character = CreateJeff(1, Name)
+	local Humanoid = Character.Humanoid
+	local Root = Character.HumanoidRootPart
+	local Torso = Character.Torso
+
+	for _, Motor in ipairs(Torso:GetChildren()) do
+		Motor.Part1:Destroy()
+		Motor:Destroy()
 	end
+
+	Torso.Name = HttpService:GenerateGUID()
+	Torso.Size = Vector3.one * Size
+	Torso.Transparency = 0
+	Root.Size = Vector3.one * Size
 end
 
 function RemoveNpc(Name)
@@ -2632,6 +2656,13 @@ end
 
 function Mirror()
 	ReplicatedStorage.Tools["Extendo mirror"]:Clone().Parent = Player.Backpack
+end
+
+function Germany()
+	for i = 0, 7 do
+		Chat("卐卐卐卐卐卐卐卐卐卐 OH SÍ MI NENA")
+		task.wait()
+	end
 end
 
 Players.PlayerAdded:Connect(function(player)
@@ -3053,6 +3084,19 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
+    name = "flea",
+    callback = CreateFlea,
+    args = {
+        {
+            name = "size"
+        },
+		{
+			name = "name"
+		}
+    }
+})
+
+vm:CreateCommand({
     name = "drawtime",
     callback = SetDrawTime,
     args = {
@@ -3251,6 +3295,11 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "mirror",
     callback = Mirror
+})
+
+vm:CreateCommand({
+    name = "germany",
+    callback = Germany
 })
 
 Player.Chatted:Connect(function(msg)
