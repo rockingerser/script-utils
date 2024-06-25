@@ -49,12 +49,11 @@ return (function(VM)
         description = "(Comando de entrada) yo/me/myself -> jugador | Devuelve al jugador que está ejecutando los comandos"
     })
     VM:CreateCommand({
-        name = { "aleatorio", "random", "randompl" }
+        name = { "aleatorio", "random", "randompl" },
         callback = function()
             local players = Players:GetPlayers()
             return players[Rand:NextInteger(1, #players)]
         end,
-        level = 0,
         description = "(Comando de entrada) aleatorio/random/randompl -> jugador | Devuelve un jugador aleatorio"
     })
 end)
