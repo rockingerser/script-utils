@@ -52,6 +52,9 @@ local SpoofsNames = {}
 local VelSpoofsOrder = {}
 local VelSpoofs = {}
 local VelSpoofsNames = {}
+local RotSpoofsOrder = {}
+local RotSpoofs = {}
+local RotSpoofsNames = {}
 local KillingPlayers = {}
 local FlingingPlayers = {}
 local ArrestingPlayers = {}
@@ -80,16 +83,14 @@ local FlyAlignOr = nil
 local FlyAttachment = nil
 local FlySpeed = 60
 local FlyBindName = HttpService:GenerateGUID()
-local BiggestNumber = 3e12
+local BiggestNumber = 34028237e31 -- 32 bit floating point limit. Roblox appears to use 32 bit floating point numbers for replicating numbers to the server
 local InvisiblePriority = 99
-local InvisibleTouchFlingPriority = 150
-local FlingPlayersPosPriority = 1800
+local FlingPlayersPriority = 1800
 local ArrestPriority = 2100
 local TpKillPriority = 2400
 local GetCarPriority = 2700
 local GetItemPriority = 3000
 local TouchFlingPriority = 99
-local FlingPlayersVelPriority = 1500
 local SpinToolsRange = 9
 local PistolName = "M9"
 local TaserName = "Taser"
@@ -102,7 +103,7 @@ local OtherGunThatBehavesLikeTheAkName = "M4A1"
 local DrawCurrGun = PistolName
 local BulletName = "RayPart"
 local ChattedDebounce = false
-local FlingForce = 124e7
+local FlingForce = BiggestNumber
 local DrawYield = .27
 local CarSpawners = {}
 local SpamSounds = {}
@@ -242,6 +243,7 @@ RayPartBullet.BrickColor = BrickColor.new("Cyan")
 RayPartBullet.Material = Enum.Material.Neon
 RayPartBullet.Transparency = .5
 RayPartBullet.CanCollide = false
+RayPartBullet.CanQuery = false
 RayPartBullet.Anchored = true
 
 function NeonText()
@@ -525,16 +527,25 @@ function NpcDefaultBehavior(Humanoid)
 	end)
 end
 
-function EveryTouched(Character, Touched)
+function EveryEvent(Event, Character, Callback)
 	for _, Part in ipairs(Character:GetChildren()) do
 		if Part:IsA("BasePart") then
-			Part.Touched:Connect(Touched)
+			Part[Event]:Connect(Callback)
 		end
 	end
 end
 
+function EveryTouched(Character, Callback)
+	EveryEvent("Touched", Character, Callback)
+end
+
+function EveryTouchEnded(Character, Callback)
+	EveryEvent("TouchEnded", Character, Callback)
+end
+
 function JeffDefaultBehavior(Humanoid)
 	local Character = Humanoid.Parent
+	local Root = Character.HumanoidRootPart
 	local Animator = Humanoid.Animator
 	local HitDebounce = {}
 	local SoccerWalkAnimation = Instance.new("Animation")
@@ -546,16 +557,37 @@ function JeffDefaultBehavior(Humanoid)
 		local TargetChar = Hit.Parent
 		local Humanoid = TargetChar:FindFirstChildOfClass("Humanoid")
 
-		if table.find(HitDebounce, TargetChar) or TargetChar == Character or Humanoid == nil or Humanoid:GetState() == Enum.HumanoidStateType.Dead then
+		if TargetChar == Character or Humanoid == nil or Humanoid:GetState() == Enum.HumanoidStateType.Dead then
 			return
 		end
 
-		Draw3D(Draw3DBullet(Hit.Position, Hit.Position, Hit))
-
-		table.insert(HitDebounce, TargetChar)
-		task.wait(.3)
-		table.remove(HitDebounce, table.find(HitDebounce, TargetChar))
+		table.insert(HitDebounce, Hit)
 	end)
+
+	EveryTouchEnded(Character, function(Hit)
+		--table.remove(HitDebounce, table.find(HitDebounce, Hit))
+		for Index, hit in ipairs(HitDebounce) do
+			if hit == Hit then
+				return table.remove(HitDebounce, Index)
+			end
+		end
+	end)
+
+	coroutine.wrap(function()
+		local TargetChars = {}
+		while Character.Parent == workspace and task.wait(.41) do
+			for _, Hit in ipairs(HitDebounce) do
+				if table.find(TargetChars, Hit.Parent) then
+					continue
+				end
+
+				Draw3D(Draw3DBullet(Vector3.zero, Vector3.zero, Hit))
+
+				table.insert(TargetChars, Hit.Parent)
+			end
+			table.clear(TargetChars)
+		end
+	end)()
 end
 
 function JeffWalkToNearestPlayer(Humanoid)
@@ -796,6 +828,32 @@ function SpoofVelocity(Name, Priority, Value)
 	VelSpoofsNames[Name] = SpoofData
 end
 
+function SpoofRotVelocity(Name, Priority, Value)
+	if RotSpoofsNames[Name] ~= nil then
+		RotSpoofsNames[Name].value = Value
+		return
+	end
+
+	local IndexOrder = 1
+
+	for _, OtherPriority in ipairs(SpoofsOrder) do
+		if Priority < OtherPriority then
+			IndexOrder += 1
+			continue
+		end
+		break
+	end
+
+	table.insert(RotSpoofsOrder, IndexOrder, Priority)
+	local SpoofData = {
+		priority = Priority,
+		value = Value
+	}
+
+	table.insert(RotSpoofs, IndexOrder, SpoofData)
+	RotSpoofsNames[Name] = SpoofData
+end
+
 function TpCar(Car, Cframe)
 	Car.WorldPivot = LocalRoot.CFrame
 	Car:PivotTo(Cframe)
@@ -968,6 +1026,19 @@ function UnspoofVelocity(Name)
 	table.remove(VelSpoofsOrder, IndexOrder)
 	table.remove(VelSpoofs, IndexOrder)
 	VelSpoofsNames[Name] = nil
+end
+
+function UnspoofRotVelocity(Name)
+	if RotSpoofsNames[Name] == nil then
+		return
+	end
+
+	local SpoofToRemove = RotSpoofsNames[Name]
+	local IndexOrder = table.find(RotSpoofs, SpoofToRemove)
+
+	table.remove(RotSpoofsOrder, IndexOrder)
+	table.remove(RotSpoofs, IndexOrder)
+	RotSpoofsNames[Name] = nil
 end
 
 function Draw3D(Data)
@@ -1171,13 +1242,12 @@ function CharacterAdded(NewCharacter)
 	local SpinningTools = {}
 	local SpoofsOldCFrame = nil
 	local SpoofsOldVel = nil
+	local SpoofsOldRotVel = nil
 	local Arrested = false
 	local HealthChanged = nil
 	local NoGunsCheck = nil
 	local RootSoundAdded = nil
 	local Step = 0
-
-	Humanoid.BreakJointsOnDeath = false
 
 	local function ToolSoundAdded(Sound)
 		if player.Character == NewCharacter and table.find(MySounds, Sound) == nil and Sound:IsA("Sound") and not Sound.PlayOnRemove then
@@ -1289,6 +1359,7 @@ function CharacterAdded(NewCharacter)
 	local SpoofServer = RunService.PostSimulation:Connect(function()
 		local SpoofsCurrent = Spoofs[1]
 		local VelSpoofsCurrent = VelSpoofs[1]
+		local RotSpoofsCurrent = RotSpoofs[1]
 
 		SpoofIndicatorPartOutline.Transparency = 1
 		if SpoofsCurrent then
@@ -1301,6 +1372,10 @@ function CharacterAdded(NewCharacter)
 		if VelSpoofsCurrent then
 			SpoofsOldVel = Root.AssemblyLinearVelocity
 			Root.AssemblyLinearVelocity = VelSpoofsCurrent.value
+		end
+		if RotSpoofsCurrent then
+			SpoofsOldRotVel = Root.AssemblyAngularVelocity
+			Root.AssemblyAngularVelocity = RotSpoofsCurrent.value
 		end
 		if SpinToolsTarget and Step % 2 == 0 then
 			local TargetHead = GetCharLimb("Head", false, SpinToolsTarget)
@@ -1345,7 +1420,7 @@ function CharacterAdded(NewCharacter)
 		Step += 1
 	end)
 
-	RunService:BindToRenderStep(Secret, 120, function()
+	RunService:BindToRenderStep(Secret, 90, function()
 		if SpoofsOldCFrame then
 			Root.CFrame = SpoofsOldCFrame
 			SpoofsOldCFrame = nil
@@ -1353,6 +1428,10 @@ function CharacterAdded(NewCharacter)
 		if SpoofsOldVel then
 			Root.AssemblyLinearVelocity = SpoofsOldVel
 			SpoofsOldVel = nil
+		end
+		if SpoofsOldRotVel then
+			Root.AssemblyAngularVelocity = SpoofsOldRotVel
+			SpoofsOldRotVel = nil
 		end
 		while #SpinningTools > 0 do
 			local Grip, WorldCFrame = unpack(table.remove(SpinningTools, 1))
@@ -1606,7 +1685,6 @@ function TpKillPlayers(players)
 		
 		repeat
 			local TargetPlayer = table.remove(KillingPlayers, 1)
-			print(TargetPlayer)
 			local TargetCharacter = TargetPlayer.Character
 
 			if TargetCharacter == nil then
@@ -2018,21 +2096,15 @@ function ArrestPlayers(players)
 end
 
 function TouchFling()
-	if TouchFlingEnabled then
-		return
-	end
 	TouchFlingEnabled = true
-	
-	repeat
-		SpoofVelocity("touchflingtask", TouchFlingPriority, Vector3.new(FlingForce, FlingForce, FlingForce))
-		RunService.PostSimulation:Wait()
-	until not TouchFlingEnabled
-
-	UnspoofVelocity("touchflingtask")
+	SpoofVelocity("touchflingtask", TouchFlingPriority, Vector3.one * FlingForce)
+	--SpoofRotVelocity("touchflingtask", TouchFlingPriority, Vector3.one * FlingForce)
 end
 
 function UntouchFling()
 	TouchFlingEnabled = false
+	UnspoofVelocity("touchflingtask")
+	--UnspoofRotVelocity("touchflingtask")
 end
 
 function FreezeServer(Timeout)
@@ -2077,7 +2149,9 @@ function FlingPlayers(players)
 	end
 
 	if ShouldBeginFling then
-		SpoofVelocity("flingplayertask", FlingPlayersVelPriority, Vector3.new(FlingForce, FlingForce, FlingForce))
+		SpoofVelocity("flingplayertask", FlingPlayersPriority, Vector3.one * FlingForce)
+		--SpoofRotVelocity("flingplayertask", FlingPlayersPriority, Vector3.one * FlingForce)
+
 		repeat
 			local TargetPlayer = table.remove(FlingingPlayers, 1)
 			local TargetRoot = GetCharLimb("HumanoidRootPart", false, TargetPlayer)
@@ -2095,7 +2169,7 @@ function FlingPlayers(players)
 
 				local TargetRootVel = TargetRoot.AssemblyLinearVelocity.Magnitude * 1.5
 
-				SpoofPosition("flingplayertask", FlingPlayersPosPriority, CFrame.new(TargetRoot.Position + TargetHum.MoveDirection * RandGen:NextNumber(TargetRootVel * .3, TargetRootVel)) * CFrame.Angles(
+				SpoofPosition("flingplayertask", FlingPlayersPriority, CFrame.new(TargetRoot.Position + TargetHum.MoveDirection * RandGen:NextNumber(TargetRootVel * .3, TargetRootVel)) * CFrame.Angles(
 					RandGen:NextNumber(-math.pi, math.pi),
 					RandGen:NextNumber(-math.pi, math.pi),
 					RandGen:NextNumber(-math.pi, math.pi)
@@ -2107,6 +2181,7 @@ function FlingPlayers(players)
 
 		UnspoofPosition("flingplayertask")
 		UnspoofVelocity("flingplayertask")
+		--UnspoofRotVelocity("flingplayertask")
 	end
 end
 
@@ -2250,16 +2325,34 @@ function CreateFlea(Size, Name)
 	local Humanoid = Character.Humanoid
 	local Root = Character.HumanoidRootPart
 	local Torso = Character.Torso
+	local Params = RaycastParams.new()
+	Params.RespectCanCollide = true
+
+	Humanoid.RequiresNeck = false
+	Humanoid.Health = 30
 
 	for _, Motor in ipairs(Torso:GetChildren()) do
-		Motor.Part1:Destroy()
-		Motor:Destroy()
+		if Motor:IsA("Motor6D") then
+			Motor.Part1:Destroy()
+			Motor:Destroy()
+		end
 	end
 
 	Torso.Name = HttpService:GenerateGUID()
 	Torso.Size = Vector3.one * Size
 	Torso.Transparency = 0
 	Root.Size = Vector3.one * Size
+
+	coroutine.wrap(function()
+	while Character.Parent == workspace do
+		RunService.PreSimulation:Wait()
+		local Result = workspace:Raycast(Root.Position - Vector3.new(0, Size / 2, 0), Root.CFrame.LookVector / 2, Params)
+
+		if Result then
+			Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		end
+	end
+end)()
 end
 
 function RemoveNpc(Name)
@@ -2662,6 +2755,12 @@ function Germany()
 	for i = 0, 7 do
 		Chat("卐卐卐卐卐卐卐卐卐卐 OH SÍ MI NENA")
 		task.wait()
+	end
+end
+
+function SetFlingForce(NewForce)
+	if typeof(NewForce) == "number" then
+		FlingForce = NewForce
 	end
 end
 
@@ -3300,6 +3399,16 @@ vm:CreateCommand({
 vm:CreateCommand({
     name = "germany",
     callback = Germany
+})
+
+vm:CreateCommand({
+    name = "flingforce",
+    callback = SetFlingForce,
+    args = {
+        {
+            name = "newflingforce"
+        }
+    }
 })
 
 Player.Chatted:Connect(function(msg)
