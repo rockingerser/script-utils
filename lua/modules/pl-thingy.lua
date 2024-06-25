@@ -276,6 +276,7 @@ AdminScreenGui.DisplayOrder = -1
 AdminCmdBox.Name = HttpService:GenerateGUID()
 AdminCmdBox.Position = UDim2.new(.5, 0, 0, 30)
 AdminCmdBox.Size = UDim2.fromOffset(300, 30)
+AdminCmdBox.Text = ""
 AdminCmdBox.PlaceholderText = "Escribe un comando (!)"
 AdminCmdBox.TextXAlignment = Enum.TextXAlignment.Left
 AdminCmdBox.TextSize = 15
@@ -2320,7 +2321,7 @@ function CreateJeff(Size, Name)
 end
 
 function CreateFlea(Size, Name)
-	Size = Size or .6
+	Size = Size or 1
 	local Character = CreateJeff(1, Name)
 	local Humanoid = Character.Humanoid
 	local Root = Character.HumanoidRootPart
@@ -2806,15 +2807,16 @@ vm:CreateCommand({
 		{
 			name = "quien"
 		}
-	}
+	},
+	description = "quitarbombanuclear/removenuke/unnuke/nonuke <jugador•equipo•[jugador•equipo ... jugador•equipo]> | Quita la bomba nuclear de un jugador o equipo"
 })
 
 vm:CreateCommand({
-	name = "oneshot",
+	name = { "mododificil", "oneshot", "hardcore", "hardcoremode" },
 	callback = OneshotPlayers,
 	args = {
 		{
-			name = "players"
+			name = "quien"
 		}
 	}
 })
