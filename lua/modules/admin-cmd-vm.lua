@@ -22,21 +22,6 @@ local CommandVM = {
 CommandVM.__index = CommandVM
 
 local Players = game:GetService("Players")
---[[ for testing outside Roblox
-local Players = {}
-local __ppl = {
-    { Name = "Playel2", DisplayName = "MyFakeName1" },
-    { Name = "Playel2", DisplayName = "ImFfinee" },
-    { Name = "Playel3", DisplayName = "HesOk" },
-    { Name = "Playel4", DisplayName = "Co0lKiBd" },
-    { Name = "Playel55", DisplayName = "MyFakeName1" },
-    { Name = "Playel6", DisplayName = "MyFakeName1" },
-}
-
-function Players:GetPlayers()
-    return __ppl
-end
-]]
 
 function CommandVM.new()
     local self = setmetatable({}, CommandVM)
@@ -86,9 +71,13 @@ function CommandVM:CreateCommand(options)
         error("callback required")
     end
 
-    --local env = getfenv(options.callback)
+    if typeof(options.name) ~= "table" then
+        options.name = { options.name }
+    end
 
-    self.Commands[options.name:upper()] = options
+    for _, Name in ipairs(options.name) do
+        self.Commands[Name:upper()] = options
+    end
 end
 
 function CommandVM:Open()

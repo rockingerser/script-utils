@@ -5,76 +5,56 @@ return (function(VM)
     local Rand = Random.new()
 
     VM:CreateCommand({
-        name = "echo",
-        callback = function(data)
-            VM:Print(data)
-        end,
-        level = 0,
-        args = {
-            {
-                name = "data",
-                description = "The data to print."
-            }
-        },
-        description = "Prints data to the console"
-    })
-    VM:CreateCommand({
-        name = "true",
+        name = { "si", "yes", "on", "true" },
         callback = function()
             return true
         end,
-        level = 0,
-        description = "Returns true"
+        description = "(Comando de entrada) si/yes/on/true -> booleano | Indica que una acción debería realizarse"
     })
     VM:CreateCommand({
-        name = "false",
+        name = { "no", "off", "false" },
         callback = function()
             return false
         end,
-        level = 0,
-        description = "Returns false"
+        description = "(Comando de entrada) no/off/false -> booleano | Indica que una acción no debería realizarse"
     })
     VM:CreateCommand({
-        name = "nil",
+        name = { "vacio", "empty", "nil", "null" },
         callback = function()
             return nil
         end,
-        level = 0,
-        description = "Returns nil"
+        description = "(DESUSO) (Comando de entrada) vacio/empty/nil/null -> ? | Omite el argumento de un comando como si no se hubiera especificado. Este comando está en desuso y será quitado en el futuro"
     })
     VM:CreateCommand({
-        name = "others",
+        name = { "otros", "others" },
         callback = function()
             local players = Players:GetPlayers()
             table.remove(players, table.find(players, Player))
             return players
         end,
-        level = 3,
-        description = "Returns a table containing all the players in the game but you"
+        description = "(Comando de entrada) otros/others -> [jugador ... jugador] | Devuelve una lista de todos los otros jugadores en el servidor"
     })
     VM:CreateCommand({
-        name = "all",
+        name = { "todos", "all" },
         callback = function()
             return Players:GetPlayers()
         end,
-        level = 3,
-        description = "Returns a table containing all the players in the game",
+        description = "(Comando de entrada) todos/all -> [jugador ... jugador] | Devuelve una lista de todos los jugadores en el servidor",
     })
     VM:CreateCommand({
-        name = "me",
+        name = { "yo", "me", "myself" }, -- 𝅘𝅥𝅮 Me, myself and I 𝅘𝅥𝅮
         callback = function()
             return Player
         end,
-        level = 0,
-        description = "Returns a player (yourself)"
+        description = "(Comando de entrada) yo/me/myself -> jugador | Devuelve al jugador que está ejecutando los comandos"
     })
     VM:CreateCommand({
-        name = "random",
+        name = { "aleatorio", "random", "randompl" }
         callback = function()
             local players = Players:GetPlayers()
             return players[Rand:NextInteger(1, #players)]
         end,
         level = 0,
-        description = "Returns a random player"
+        description = "(Comando de entrada) aleatorio/random/randompl -> jugador | Devuelve un jugador aleatorio"
     })
 end)

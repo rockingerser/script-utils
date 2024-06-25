@@ -83,7 +83,7 @@ local FlyAlignOr = nil
 local FlyAttachment = nil
 local FlySpeed = 60
 local FlyBindName = HttpService:GenerateGUID()
-local BiggestNumber = 34028237e31 -- 32 bit floating point limit. Roblox appears to use 32 bit floating point numbers for replicating numbers to the server
+local BiggestNumber = 34028235e31
 local InvisiblePriority = 99
 local FlingPlayersPriority = 1800
 local ArrestPriority = 2100
@@ -276,7 +276,7 @@ AdminScreenGui.DisplayOrder = -1
 AdminCmdBox.Name = HttpService:GenerateGUID()
 AdminCmdBox.Position = UDim2.new(.5, 0, 0, 30)
 AdminCmdBox.Size = UDim2.fromOffset(300, 30)
-AdminCmdBox.PlaceholderText = "Type a command (!)"
+AdminCmdBox.PlaceholderText = "Escribe un comando (!)"
 AdminCmdBox.TextXAlignment = Enum.TextXAlignment.Left
 AdminCmdBox.TextSize = 15
 AdminCmdBox.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -2320,7 +2320,7 @@ function CreateJeff(Size, Name)
 end
 
 function CreateFlea(Size, Name)
-	Size = Size or 1
+	Size = Size or .6
 	local Character = CreateJeff(1, Name)
 	local Humanoid = Character.Humanoid
 	local Root = Character.HumanoidRootPart
@@ -2329,7 +2329,7 @@ function CreateFlea(Size, Name)
 	Params.RespectCanCollide = true
 
 	Humanoid.RequiresNeck = false
-	Humanoid.Health = 30
+	Humanoid.Health = 15
 
 	for _, Motor in ipairs(Torso:GetChildren()) do
 		if Motor:IsA("Motor6D") then
@@ -2778,23 +2778,25 @@ UserInputService.JumpRequest:Connect(function()
 end)
 
 vm:CreateCommand({
-	name = "kill",
+	name = { "matar", "kill", "oof" },
 	callback = KillPlayers,
 	args = {
 		{
-			name = "players"
+			name = "quien"
 		}
-	}
+	},
+	description = "matar/kill/oof <jugador•equipo•[jugador•equipo ... jugador•equipo]> Mata al jugador o equipo especificado. Puedes matar a una lista de jugadores o equipos (%smatar [<jugador1> <jugador2> guardias])"
 })
 
 vm:CreateCommand({
-	name = "nuke",
+	name = { "bombanuclear", "nuke", "addnuke" },
 	callback = AddNuke,
 	args = {
 		{
-			name = "players"
+			name = "quien"
 		}
-	}
+	},
+	description = "bombanuclear/nuke/addnuke <jugador•equipo•[jugador•equipo ...]> Convierte al jugador o equipo en una bomba nuclear que al morir matará a todos los jugadores"
 })
 
 vm:CreateCommand({
@@ -3183,7 +3185,7 @@ vm:CreateCommand({
 })
 
 vm:CreateCommand({
-    name = "flea",
+    name = "ant",
     callback = CreateFlea,
     args = {
         {
