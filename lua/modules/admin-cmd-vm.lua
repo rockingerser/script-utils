@@ -136,8 +136,16 @@ function CommandVM:GetValue(value)
     elseif opcode == self.opcode.CONST then
         if value.type == self.datatypes.player then
             local PlayerName = value.value
+
+            if PlayerName == "" then
+                return
+            end
+            
             for _, Player in ipairs(Players:GetPlayers()) do
-                if Player.DisplayName:lower():find("^"..PlayerName:lower()) then
+                if Player.Name:lower():sub(1, #PlayerName) == PlayerName then
+                    return Player
+                end
+                if Player.DisplayName:lower():sub(1, #PlayerName) == PlayerName then
                     return Player
                 end
             end
