@@ -163,9 +163,14 @@ function Parser:ParseArgs(forCommand, Limit)
     while true do
         while self.script:sub(self.i, self.i):find("%s") do
             self.i += 1
-        end 
+        end
 
-        if self.i > #self.script or self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix or Limit and numParsedArgs == #args then
+        if self.script:sub(self.i, self.i + #self.CmdPrefix - 1) == self.CmdPrefix then
+            self.i += #self.CmdPrefix - 2
+            break
+        end
+
+        if self.i > #self.script or Limit and numParsedArgs == #args then
             break
         end
 
